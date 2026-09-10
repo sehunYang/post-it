@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Post-it · 옮겨 적는 클립보드</title>
+<meta name="description" content="데스크톱에서 적어두면 갤럭시 위젯 한 번으로 붙여넣습니다. 폰에서 적은 것도 바로 데스크톱으로.">
+<meta name="theme-color" content="#f7f7f4">
+<link rel="icon" type="image/png" href="icons/signature.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="css/main.css?v=1">
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+
+<header class="site-header">
+  <a class="brand" href="./" aria-label="Post-it 처음으로"><img src="icons/signature.png" alt="" width="2380" height="2473"></a>
+  <span class="wordmark">Post-it</span>
+  <nav aria-label="주요 메뉴"><a href="https://shy.ai.kr" target="_blank" rel="noopener">포트폴리오</a></nav>
+  <button id="theme-toggle" class="icon-button" type="button" aria-label="색상 모드 전환">◐</button>
+</header>
+
+<main id="main">
+
+  <!-- 로그인 전 -->
+  <section id="gate" class="hero" hidden>
+    <p class="eyebrow">Clipboard Sync</p>
+    <h1>옮기고 싶은 말을 적어두면,<br><span>폰에서 한 번에 붙여넣습니다.</span></h1>
+    <p class="lede">데스크톱에서 저장한 글이 갤럭시 홈 화면 위젯에 뜹니다. 위젯을 누르면 클립보드로 복사됩니다.<br>반대로 폰에서 적은 것도 이 화면에 바로 나타납니다.</p>
+    <div class="sim-actions">
+      <button id="btn-signin" class="button" type="button">Google 계정으로 시작하기</button>
+    </div>
+    <div class="badges">
+      <span>실시간 동기화</span><span>내 계정만 접근</span><span>무료 티어</span>
+    </div>
+  </section>
+
+  <!-- 설정 누락 안내 -->
+  <section id="unconfigured" class="hero" hidden>
+    <p class="eyebrow">Setup</p>
+    <h1>Firebase 설정이 <span>아직 비어 있습니다.</span></h1>
+    <p class="lede"><code>js/firebase-config.js</code> 파일에 Firebase 웹 앱 설정값을 채워 주세요.</p>
+    <p class="notice">자세한 절차는 저장소의 <code>docs/SETUP.md</code> 를 참고하세요.</p>
+  </section>
+
+  <!-- 로그인 후 -->
+  <section id="app" hidden>
+    <div class="account">
+      <img id="avatar" class="avatar" alt="" width="36" height="36">
+      <div class="account-meta">
+        <b id="account-name">—</b>
+        <span id="account-mail" class="muted"></span>
+      </div>
+      <button id="btn-signout" class="ghost-button" type="button">로그아웃</button>
+    </div>
+
+    <div class="composer">
+      <label class="eyebrow" for="input">새로 적기</label>
+      <textarea id="input" rows="4" placeholder="옮기고 싶은 말을 여기에 적으세요.&#10;Ctrl + Enter 로 저장합니다."></textarea>
+      <div class="composer-bar">
+        <span id="counter" class="muted">0자</span>
+        <div class="sim-actions">
+          <button id="btn-cancel-edit" class="ghost-button" type="button" hidden>수정 취소</button>
+          <button id="btn-save" class="button" type="button">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-head">
+      <h2>저장한 글</h2>
+      <p class="accordion-hint">📌 로 고정한 글 하나가 폰 위젯에 표시됩니다.</p>
+    </div>
+
+    <ul id="list" class="notes"></ul>
+
+    <p id="empty" class="notice" hidden>아직 저장한 글이 없습니다. 위 입력창에 첫 문장을 적어 보세요.</p>
+  </section>
+</main>
+
+<footer>
+  <span class="muted">Post-it</span>
+  <a class="muted" href="https://github.com/sehunYang" target="_blank" rel="noopener">github.com/sehunYang</a>
+</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="js/app.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "Post-it · 옮겨 적는 클립보드",
+  "short_name": "Post-it",
+  "description": "데스크톱에서 적어두면 갤럭시 위젯 한 번으로 붙여넣습니다.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f7f4",
+  "theme_color": "#f7f7f4",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icons/signature.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 에디터
+.vscode/
+.idea/
+
+# OMC 작업 상태
+.omc/
+
+# 안드로이드 (android/.gitignore 에도 규칙이 있습니다)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.kotlin/
+android/app/google-services.json

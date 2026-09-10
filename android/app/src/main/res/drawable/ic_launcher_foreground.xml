@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- 붙였다 떼는 메모지: 오른쪽 아래 모서리가 접힌 사각형 -->
+    <group android:translateX="27" android:translateY="27">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M6,0h30a6,6 0 0,1 6,6v20L26,42H6a6,6 0 0,1 -6,-6V6A6,6 0 0,1 6,0z" />
+        <path
+            android:fillColor="#FFB9D0F7"
+            android:pathData="M42,26L26,42v-11a5,5 0 0,1 5,-5z" />
+        <path
+            android:fillColor="#FF2563EB"
+            android:pathData="M9,11h24v4H9zM9,20h24v4H9zM9,29h13v4H9z" />
+    </group>
+</vector>
