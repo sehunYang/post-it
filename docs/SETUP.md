@@ -78,7 +78,11 @@ export const firebaseConfig = {
 ## 6. GitHub Pages 도메인 허용하기
 
 **Authentication → 설정 → 승인된 도메인** 에서 **도메인 추가**를 눌러
-`sehunyang.github.io` 를 추가합니다.
+`shy.ai.kr` 을 추가합니다.
+
+이 저장소의 웹앱은 계정에 걸린 커스텀 도메인 덕분에
+`sehunyang.github.io/post-it/` 이 아니라 **<https://shy.ai.kr/post-it/>** 로 열립니다.
+포트폴리오와 같은 도메인이라, 승인해야 할 도메인도 `shy.ai.kr` 하나입니다.
 
 이걸 빠뜨리면 배포된 웹앱에서 Google 로그인 팝업이 `auth/unauthorized-domain` 으로 실패합니다.
 (로컬 테스트용 `localhost` 는 기본으로 들어 있습니다.)
@@ -150,10 +154,9 @@ APK를 카카오톡 나에게 보내기·구글 드라이브 등으로 폰에 �
 
 **Settings → Pages → Source: Deploy from a branch → Branch: `main` / `(root)` → Save**
 
-1~2분 뒤 <https://sehunyang.github.io/post-it/> 에서 열립니다.
+1~2분 뒤 **<https://shy.ai.kr/post-it/>** 에서 열립니다.
 
-> `shy.ai.kr` 처럼 직접 쓰는 도메인이 있으면 `post-it.shy.ai.kr` 같은 서브도메인을
-> CNAME으로 연결할 수도 있습니다. 그 경우 6단계의 승인된 도메인에 그 주소도 추가하세요.
+> 이미 설정을 마쳐 두었습니다. 저장소에 push 하면 자동으로 다시 배포됩니다.
 
 ---
 
@@ -162,7 +165,7 @@ APK를 카카오톡 나에게 보내기·구글 드라이브 등으로 폰에 �
 | 증상 | 원인과 해결 |
 |---|---|
 | 웹앱에 "Firebase 설정이 아직 비어 있습니다" | 5단계를 안 했습니다. `js/firebase-config.js` 를 채우세요. |
-| 로그인 팝업이 `auth/unauthorized-domain` 으로 실패 | 6단계를 안 했습니다. 승인된 도메인에 주소를 추가하세요. |
+| 로그인 팝업이 `auth/unauthorized-domain` 으로 실패 | 6단계를 안 했습니다. 승인된 도메인에 `shy.ai.kr` 을 추가하세요. |
 | 앱 실행 시 "Firebase 설정이 없습니다" 대화상자 | `android/app/google-services.json` 이 없습니다. 7단계를 하세요. |
 | 안드로이드에서 로그인만 실패 | SHA-1 미등록이거나, SHA-1 등록 후 google-services.json 을 다시 안 받았습니다. |
 | 웹앱에서 "읽기 실패: permission-denied" | 4단계 규칙을 게시하지 않았습니다. |

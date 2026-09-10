@@ -1,5 +1,7 @@
 # Post-it
 
+**<https://shy.ai.kr/post-it/>**
+
 옮기고 싶은 말을 데스크톱에서 적어두면, 갤럭시 홈 화면 위젯을 한 번 눌러 클립보드에 붙여넣습니다.
 반대로 폰에서 적거나 공유한 글도 데스크톱에 바로 나타납니다.
 
@@ -42,7 +44,7 @@ GitHub Pages 웹앱                             네이티브 앱 + 홈 화면 �
 
 1. Firebase 프로젝트 생성 → Google 로그인 켜기 → **Realtime Database 생성**
 2. `database.rules.json` 규칙 게시
-3. 웹 앱 등록 → `js/firebase-config.js` 채우기 → 승인된 도메인에 `sehunyang.github.io` 추가
+3. 웹 앱 등록 → `js/firebase-config.js` 채우기 → 승인된 도메인에 `shy.ai.kr` 추가
 4. 안드로이드 앱 등록(패키지 `kr.ai.shy.postit` + SHA-1) → `google-services.json` 을 `android/app/` 에
 5. `cd android && ./gradlew assembleDebug` → APK를 폰에 설치 → 위젯 배치
 
