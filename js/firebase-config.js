@@ -4,11 +4,11 @@
 // 이 값들은 비밀이 아닙니다. 공개 저장소에 올려도 안전하며,
 // 실제 보안은 database.rules.json 의 규칙이 담당합니다.
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  databaseURL: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyBL2BI2e5KJZwYBzcsfTdS1MmkINAziLiY",
+  authDomain: "post-it-249dc.firebaseapp.com",
+  databaseURL: "https://post-it-249dc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "post-it-249dc",
+  storageBucket: "post-it-249dc.firebasestorage.app",
+  messagingSenderId: "1072779270160",
+  appId: "1:1072779270160:web:decb94f4f6dafe9b05d295"
 };
