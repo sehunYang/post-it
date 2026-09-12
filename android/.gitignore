@@ -6,3 +6,5 @@ app/google-services.json
 *.iml
 .idea/
 .kotlin/
+keystore/
+keystore.properties

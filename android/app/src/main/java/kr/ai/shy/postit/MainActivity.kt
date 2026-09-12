@@ -1,8 +1,12 @@
 package kr.ai.shy.postit
 
+import android.appwidget.AppWidgetManager
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -56,6 +60,8 @@ class MainActivity : AppCompatActivity() {
         setUpList()
         setUpComposer()
         setUpSelection()
+        setUpAddWidget()
+        setUpUpdateBanner()
 
         binding.btnSignin.setOnClickListener { signIn() }
         binding.btnSignout.setOnClickListener { signOut() }
@@ -175,6 +181,65 @@ class MainActivity : AppCompatActivity() {
         binding.app.visibility = View.VISIBLE
         binding.accountMail.text = Repo.auth.currentUser?.email.orEmpty()
         attachListener(uid)
+        checkUpdate()
+    }
+
+    /* ---------- 위젯 추가 ---------- */
+
+    private fun setUpAddWidget() {
+        // 런처가 "바로 추가" 를 지원하지 않으면 버튼을 아예 숨깁니다.
+        val manager = AppWidgetManager.getInstance(this)
+        val supported = runCatching { manager.isRequestPinAppWidgetSupported }.getOrDefault(false)
+        binding.btnAddWidget.visibility = if (supported) View.VISIBLE else View.GONE
+        binding.btnAddWidget.setOnClickListener { askWidgetSize() }
+    }
+
+    private fun askWidgetSize() {
+        val labels = arrayOf(getString(R.string.add_widget_wide), getString(R.string.add_widget_square))
+        AlertDialog.Builder(this)
+            .setTitle(R.string.add_widget)
+            .setItems(labels) { _, which ->
+                val provider =
+                    if (which == 0) PostItWidget::class.java else PostItWidgetSmall::class.java
+                pinWidget(provider)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun pinWidget(provider: Class<*>) {
+        val manager = AppWidgetManager.getInstance(this)
+        val ok = runCatching {
+            manager.requestPinAppWidget(ComponentName(this, provider), null, null)
+        }.getOrDefault(false)
+        if (!ok) Toast.makeText(this, R.string.add_widget_failed, Toast.LENGTH_LONG).show()
+    }
+
+    /* ---------- 새 버전 알림 ---------- */
+
+    private var updateChecked = false
+
+    private fun setUpUpdateBanner() {
+        binding.btnUpdate.setOnClickListener {
+            runCatching {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Update.DOWNLOAD_URL)))
+            }
+        }
+    }
+
+    /** 화면이 살아 있는 동안 한 번만 확인합니다. 실패하면 배너를 그냥 숨겨 둡니다. */
+    private fun checkUpdate() {
+        if (updateChecked) return
+        updateChecked = true
+        lifecycleScope.launch {
+            val latest = runCatching { Update.newerVersion(applicationContext) }.getOrNull()
+            if (latest == null) {
+                binding.updateBanner.visibility = View.GONE
+                return@launch
+            }
+            binding.updateText.text = getString(R.string.update_available, latest)
+            binding.updateBanner.visibility = View.VISIBLE
+        }
     }
 
     /* ---------- 실시간 목록 ---------- */
@@ -376,7 +441,7 @@ class MainActivity : AppCompatActivity() {
                     toast(R.string.saved)
                 }
             } catch (t: Throwable) {
-                Toast.makeText(this@MainActivity, t.localizedMessage ?: "실패했습니다.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, friendly(t), Toast.LENGTH_LONG).show()
             } finally {
                 binding.btnSave.isEnabled = true
             }
@@ -413,7 +478,7 @@ class MainActivity : AppCompatActivity() {
             runCatching { Repo.setPinned(uid, if (pinned) null else note.id) }
                 .onSuccess { toast(if (pinned) R.string.unpinned_done else R.string.pinned_done) }
                 .onFailure {
-                    Toast.makeText(this@MainActivity, it.localizedMessage ?: "실패했습니다.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, friendly(it), Toast.LENGTH_LONG).show()
                 }
         }
     }
@@ -448,7 +513,7 @@ class MainActivity : AppCompatActivity() {
                             toast(R.string.deleted)
                         }
                         .onFailure {
-                            Toast.makeText(this@MainActivity, it.localizedMessage ?: "실패했습니다.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@MainActivity, friendly(it), Toast.LENGTH_LONG).show()
                         }
                 }
             }
@@ -456,4 +521,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun toast(resId: Int) = Toast.makeText(this, resId, Toast.LENGTH_SHORT).show()
+
+    /**
+     * 실패 이유를 사람이 읽을 수 있는 말로 바꿉니다.
+     * 데이터베이스 규칙이 글 길이를 막으면 권한 오류로 돌아오는데,
+     * 그대로 보여 주면 무슨 일인지 알 수 없어서 길이 제한으로 안내합니다.
+     */
+    private fun friendly(t: Throwable): String {
+        val message = t.message.orEmpty()
+        val denied = message.contains("Permission denied", ignoreCase = true) ||
+            message.contains("PERMISSION_DENIED", ignoreCase = true)
+        return if (denied) "글 하나는 5,000자까지 저장할 수 있습니다."
+        else t.localizedMessage ?: "실패했습니다."
+    }
 }

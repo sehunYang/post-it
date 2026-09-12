@@ -40,7 +40,7 @@
 
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Post-it","alternateName":"Post-it 클립보드","url":"https://shy.ai.kr/post-it/","description":"데스크톱에서 적어둔 글을 갤럭시 홈 화면 위젯 한 번으로 클립보드에 붙여넣고, 폰에서 적은 글도 데스크톱에 바로 나타나는 양방향 클립보드 웹앱.","applicationCategory":"ProductivityApplication","operatingSystem":"Web, Android","inLanguage":"ko","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"author":{"@type":"Person","name":"양세훈","url":"https://shy.ai.kr/"},"softwareHelp":"https://github.com/sehunYang/post-it"}</script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="css/main.css?v=5">
+<link rel="stylesheet" href="css/main.css?v=6">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -63,7 +63,7 @@
       <button id="btn-signin" class="button" type="button">Google 계정으로 시작하기</button>
     </div>
     <div class="badges">
-      <span>실시간 동기화</span><span>내 계정만 접근</span><span>무료 티어</span>
+      <span>설치 없이 바로 시작</span><span>내 계정만 접근</span><span>무료</span>
     </div>
   </section>
 
@@ -75,18 +75,14 @@
     <p class="notice">자세한 절차는 저장소의 <code>docs/SETUP.md</code> 를 참고하세요.</p>
   </section>
 
-  <!-- 허용되지 않은 계정으로 로그인한 경우 -->
+  <!-- 데이터 읽기가 거부된 경우 (보안 규칙이 아직 반영되지 않았거나 계정 문제) -->
   <section id="denied" class="hero" hidden>
-    <p class="eyebrow">Private</p>
-    <h1>이 앱은 <span>개인용입니다.</span></h1>
-    <p class="lede">찾아와 주셔서 감사합니다. Post-it 은 만든 사람 한 명이 쓰려고 만든 클립보드 도구라,
-      다른 계정으로는 글을 저장하거나 볼 수 없습니다.</p>
-    <p class="notice">직접 쓰고 싶으시다면 소스가 모두 공개되어 있습니다.
-      <a href="https://github.com/sehunYang/post-it" target="_blank" rel="noopener">github.com/sehunYang/post-it</a> 의
-      <code>docs/SETUP.md</code> 를 따라 하시면 본인 Firebase 프로젝트로 똑같이 만드실 수 있습니다.</p>
+    <p class="eyebrow">Access</p>
+    <h1>이 계정으로는 <span>읽을 수 없습니다.</span></h1>
+    <p class="lede">서버가 이 계정의 접근을 거부했습니다. 잠시 뒤 다시 시도하거나, 다른 Google 계정으로 로그인해 보세요.</p>
+    <p class="notice">계속 안 되면 <a href="https://github.com/sehunYang/post-it/issues" target="_blank" rel="noopener">github.com/sehunYang/post-it/issues</a> 에 알려 주세요.</p>
     <div class="sim-actions">
       <button id="btn-signout-denied" class="button" type="button">로그아웃</button>
-      <a class="ghost-button" href="https://shy.ai.kr" target="_blank" rel="noopener">만든 사람 소개</a>
     </div>
   </section>
 
@@ -101,11 +97,29 @@
       <button id="btn-signout" class="ghost-button" type="button">로그아웃</button>
     </div>
 
+    <details id="phone-panel" class="phone-panel" open>
+      <summary>
+        <span class="eyebrow">Android</span>
+        <b>폰에 위젯 설치하기</b>
+        <span class="muted">카메라로 QR을 찍으면 끝</span>
+      </summary>
+      <div class="phone-body">
+        <a id="qr" class="qr" href="install/" target="_blank" rel="noopener" aria-label="설치 페이지 QR 코드"></a>
+        <ol class="phone-steps">
+          <li>폰 카메라로 왼쪽 QR을 찍어 설치 페이지를 엽니다.</li>
+          <li><b>APK 내려받기</b>를 누르고, 내려받은 파일을 열어 설치합니다. "이 출처의 앱 설치 허용"을 한 번 켜 주면 됩니다.</li>
+          <li>앱을 열고 <b>지금 이 Google 계정</b>으로 로그인합니다.</li>
+          <li>앱 안의 <b>홈 화면에 위젯 추가</b>를 누릅니다.</li>
+        </ol>
+      </div>
+      <p class="phone-link muted">QR이 안 찍히면 폰 브라우저에 <span id="install-url">shy.ai.kr/post-it/install/</span> 을 입력하세요.</p>
+    </details>
+
     <div class="composer">
       <label class="eyebrow" for="input">새로 적기</label>
       <textarea id="input" rows="4" placeholder="옮기고 싶은 말을 여기에 적으세요.&#10;Ctrl + Enter 로 저장합니다."></textarea>
       <div class="composer-bar">
-        <span id="counter" class="muted">0자</span>
+        <span id="counter" class="muted">0 / 5,000자</span>
         <div class="sim-actions">
           <button id="btn-cancel-edit" class="ghost-button" type="button" hidden>수정 취소</button>
           <button id="btn-save" class="button" type="button">저장</button>
@@ -141,6 +155,7 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="js/app.js?v=5"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
+<script type="module" src="js/app.js?v=6"></script>
 </body>
 </html>

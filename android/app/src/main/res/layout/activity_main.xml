@@ -67,6 +67,48 @@
         android:orientation="vertical"
         android:visibility="gone">
 
+        <!-- 새 버전이 올라와 있을 때만 보이는 줄 -->
+        <LinearLayout
+            android:id="@+id/update_banner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/card_bg_pinned"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="18dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/update_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_update"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/update_download"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:cornerRadius="999dp" />
+        </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -108,6 +150,26 @@
                 android:textColor="@color/muted"
                 android:textSize="12sp" />
         </LinearLayout>
+
+        <!-- 런처가 위젯 바로 추가를 지원할 때만 보입니다. -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_add_widget"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginBottom="10dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="0dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:text="@string/add_widget"
+            android:textColor="@color/text"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:cornerRadius="999dp"
+            app:strokeColor="@color/line" />
 
         <!-- 다중 선택 모드일 때 입력창 대신 나타나는 줄 -->
         <LinearLayout

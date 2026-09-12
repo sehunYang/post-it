@@ -10,7 +10,24 @@ import { firebaseConfig } from "./firebase-config.js";
 
 /* ---------- 유틸 ---------- */
 const $ = (id) => document.getElementById(id);
-const MAX_LEN = 20000;
+
+/* 보안 규칙(database.rules.json)과 같은 값. 소유자만 더 긴 글을 저장할 수 있습니다. */
+const OWNER_UID = "PKfixfmWHlVOfBMPPvaileeINRC3";
+const MAX_LEN_OWNER = 20000;
+const MAX_LEN = 5000;
+const maxLen = () => (uid === OWNER_UID ? MAX_LEN_OWNER : MAX_LEN);
+
+const INSTALL_URL = "https://shy.ai.kr/post-it/install/";
+const PHONE_PANEL_KEY = "postit.phonePanel";
+
+/** 규칙에 막힌 쓰기를 고장으로 보이지 않게 풀어 씁니다. */
+function friendly(err) {
+  const msg = String(err && (err.code || err.message) || "");
+  if (/permission[_-]denied/i.test(msg)) {
+    return `글 하나는 ${maxLen().toLocaleString("ko-KR")}자까지 저장할 수 있습니다.`;
+  }
+  return msg || "실패했습니다.";
+}
 
 let toastTimer;
 function toast(message) {
@@ -144,6 +161,8 @@ onAuthStateChanged(auth, (user) => {
   $("account-name").textContent = user.displayName || "내 계정";
   $("account-mail").textContent = user.email || "";
   if (user.photoURL) $("avatar").src = user.photoURL;
+  updateCounter();
+  renderPhonePanel();
 
   unsubscribe = onValue(
     ref(db, "users/" + uid),
@@ -378,8 +397,38 @@ async function removeSelected() {
 
 /* ---------- 동작 ---------- */
 function updateCounter() {
-  $("counter").textContent = input.value.length + "자";
+  const n = input.value.length;
+  $("counter").textContent =
+    n.toLocaleString("ko-KR") + " / " + maxLen().toLocaleString("ko-KR") + "자";
+  $("counter").classList.toggle("is-over", n > maxLen());
 }
+
+/* ---------- 폰 설치 패널 (QR) ---------- */
+let qrDrawn = false;
+function renderPhonePanel() {
+  const panel = $("phone-panel");
+  panel.open = localStorage.getItem(PHONE_PANEL_KEY) !== "closed";
+  if (qrDrawn) return;
+  qrDrawn = true;
+
+  const box = $("qr");
+  box.href = INSTALL_URL;
+  $("install-url").textContent = INSTALL_URL.replace(/^https:\/\//, "");
+  try {
+    // qrcode-generator (전역 qrcode). CDN 이 막히면 주소 글자만 남습니다.
+    const qr = window.qrcode(0, "M");
+    qr.addData(INSTALL_URL);
+    qr.make();
+    box.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  } catch (err) {
+    console.warn("QR 생성 실패", err);
+    box.textContent = INSTALL_URL;
+  }
+}
+
+$("phone-panel").addEventListener("toggle", (e) => {
+  localStorage.setItem(PHONE_PANEL_KEY, e.target.open ? "open" : "closed");
+});
 
 input.addEventListener("input", updateCounter);
 input.addEventListener("keydown", (e) => {
@@ -396,7 +445,10 @@ async function save() {
   if (!uid) return;
   const text = input.value.trim();
   if (!text) { toast("내용을 입력해 주세요."); input.focus(); return; }
-  if (text.length > MAX_LEN) { toast(MAX_LEN + "자까지 저장할 수 있습니다."); return; }
+  if (text.length > maxLen()) {
+    toast("글 하나는 " + maxLen().toLocaleString("ko-KR") + "자까지 저장할 수 있습니다.");
+    return;
+  }
 
   btnSave.disabled = true;
   try {
@@ -422,7 +474,7 @@ async function save() {
     }
   } catch (err) {
     console.error(err);
-    toast("저장 실패: " + (err.code || err.message));
+    toast("저장 실패: " + friendly(err));
   } finally {
     btnSave.disabled = false;
   }

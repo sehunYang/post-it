@@ -1,4 +1,7 @@
-# 설정 가이드
+# 설정 가이드 (소유자용)
+
+이 문서는 **Post-it 을 자기 Firebase 프로젝트로 처음 만드는 사람**을 위한 것입니다.
+그냥 쓰려는 분은 [README](../README.md) 대로 <https://shy.ai.kr/post-it/> 에서 로그인하면 됩니다.
 
 처음 한 번만 하면 되는 작업입니다. **순서를 지켜 주세요** — 특히 3단계(Realtime Database 생성)를
 7단계(google-services.json 내려받기)보다 먼저 해야 합니다. 그러지 않으면 안드로이드 앱이
@@ -46,7 +49,8 @@
 
 - 로그인한 사람은 **자기 UID 아래 데이터만** 읽고 쓸 수 있습니다.
 - 로그인하지 않으면 아무것도 읽을 수 없습니다.
-- 글은 최대 20,000자, 정해진 필드 외에는 저장되지 않습니다.
+- 소유자 UID(규칙 안의 `PKfix…` 값)는 글 하나 20,000자, 그 외 계정은 5,000자까지. 정해진 필드 외에는 저장되지 않습니다.
+- 자기 프로젝트로 만든다면 규칙 안의 소유자 UID 를 본인 UID 로 바꾸세요(Authentication → 사용자 탭에 보입니다).
 
 ---
 
@@ -93,58 +97,51 @@ export const firebaseConfig = {
 
 1. **프로젝트 설정 → 일반 → 내 앱** → **Android** 아이콘 클릭
 2. **Android 패키지 이름**: `kr.ai.shy.postit` ← 정확히 이대로 입력해야 합니다.
-3. **디버그 서명 인증서 SHA-1**: 아래 값을 입력합니다.
+3. **서명 인증서 SHA-1**: 앱을 서명하는 키의 SHA-1 을 넣습니다. 앱 등록 뒤에도
+   프로젝트 설정 → 내 앱 → 디지털 지문 추가 로 더 넣을 수 있습니다. 두 개를 넣어 두세요.
 
-   ```
-   D8:35:66:2D:67:E0:A8:C3:60:15:66:7A:82:6D:B6:67:70:FC:14:31
-   ```
+   - 배포용 릴리스 키 (`android/keystore/post-it-release.jks`, [RELEASE.md](RELEASE.md) 참고):
+     ```
+     0C:E5:20:29:62:E1:1E:D8:37:5D:3C:E6:E2:72:0C:9F:0C:09:9C:7D
+     ```
+   - 이 PC 의 디버그 키 (`./gradlew assembleDebug` 로 직접 설치해 볼 때):
+     ```
+     D8:35:66:2D:67:E0:A8:C3:60:15:66:7A:82:6D:B6:67:70:FC:14:31
+     ```
 
-   > 이 값은 이 PC의 `~/.android/debug.keystore` 에서 뽑은 것입니다.
-   > 직접 다시 확인하려면:
+   > 디버그 키 값을 다시 확인하려면:
    > ```
    > keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
    > ```
-   > SHA-1 을 넣지 않으면 안드로이드에서 **Google 로그인이 반드시 실패합니다.**
+   > 설치된 APK 의 서명 키 SHA-1 이 등록돼 있지 않으면 안드로이드에서 **Google 로그인이 반드시 실패합니다.**
 
 4. **google-services.json 다운로드** → 파일을 `android/app/google-services.json` 에 넣습니다.
 5. 나머지 안내(Gradle 설정)는 **이미 되어 있으니 그냥 넘기면** 됩니다.
 
-> SHA-1을 나중에 추가했다면 **google-services.json을 반드시 다시 내려받아** 교체하세요.
+> SHA-1 은 나중에 추가해도 바로 적용됩니다(로그인이 웹 클라이언트 ID 를 쓰므로 google-services.json 을 다시 받을 필요는 없습니다).
 
 ---
 
-## 8. 안드로이드 앱 빌드하고 폰에 설치하기
-
-프로젝트 폴더에서:
+## 8. 안드로이드 앱 빌드하기
 
 ```bash
 cd android
-./gradlew assembleDebug
+./gradlew assembleDebug      # → app/build/outputs/apk/debug/app-debug.apk (디버그 키 서명)
+./gradlew assembleRelease    # → app/build/outputs/apk/release/app-release.apk (릴리스 키 서명)
 ```
 
-만들어진 APK: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-폰에 넣는 방법 두 가지 중 편한 쪽을 고르세요.
-
-**USB (권장)**
-1. 폰에서 **설정 → 휴대전화 정보 → 소프트웨어 정보 → 빌드번호**를 7번 눌러 개발자 모드 켜기
-2. **설정 → 개발자 옵션 → USB 디버깅** 켜기
-3. USB로 연결한 뒤:
-   ```bash
-   adb install -r app/build/outputs/apk/debug/app-debug.apk
-   ```
-
-**파일 전송**
-APK를 카카오톡 나에게 보내기·구글 드라이브 등으로 폰에 옮긴 뒤 눌러서 설치합니다.
-"출처를 알 수 없는 앱 설치"를 한 번 허용해 주어야 합니다.
+릴리스 빌드는 `android/keystore.properties` 가 있을 때만 릴리스 키로 서명하고, 없으면 디버그 키를 씁니다.
+릴리스 키를 만들고 Releases 에 올리는 순서는 [RELEASE.md](RELEASE.md) 에 있습니다.
 
 ---
 
-## 9. 위젯 올리기
+## 9. 폰에 설치하고 위젯 올리기
 
-1. 폰에서 **Post-it** 앱을 열고 **Google 계정으로 시작하기** → 5단계에서 쓴 것과 **같은 계정**으로 로그인
-2. 홈 화면 빈 곳을 길게 누르기 → **위젯** → **Post-it** → 홈 화면으로 끌어다 놓기
-3. 웹앱에서 글을 하나 저장하고 **위젯에 고정**을 누른 뒤, 위젯의 새로 고침 아이콘을 눌러 보세요.
+교사들과 같은 길을 쓰면 됩니다. <https://shy.ai.kr/post-it/install/> 을 폰에서 열어 APK 를 받아 설치하고,
+앱에서 **Google 계정으로 시작하기** → 5단계와 **같은 계정**으로 로그인 → **홈 화면에 위젯 추가**.
+
+직접 빌드한 APK 를 넣고 싶으면 USB 디버깅을 켠 뒤 `adb install -r <apk>` 로 넣거나,
+파일을 폰으로 옮겨 눌러 설치합니다.
 
 ---
 
@@ -167,7 +164,7 @@ APK를 카카오톡 나에게 보내기·구글 드라이브 등으로 폰에 �
 | 웹앱에 "Firebase 설정이 아직 비어 있습니다" | 5단계를 안 했습니다. `js/firebase-config.js` 를 채우세요. |
 | 로그인 팝업이 `auth/unauthorized-domain` 으로 실패 | 6단계를 안 했습니다. 승인된 도메인에 `shy.ai.kr` 을 추가하세요. |
 | 앱 실행 시 "Firebase 설정이 없습니다" 대화상자 | `android/app/google-services.json` 이 없습니다. 7단계를 하세요. |
-| 안드로이드에서 로그인만 실패 | SHA-1 미등록이거나, SHA-1 등록 후 google-services.json 을 다시 안 받았습니다. |
+| 안드로이드에서 로그인만 실패 | 설치된 APK 를 서명한 키의 SHA-1 이 7단계에 등록되지 않았습니다. |
 | 웹앱에서 "읽기 실패: permission-denied" | 4단계 규칙을 게시하지 않았습니다. |
 | 위젯 내용이 오래됨 | 정상입니다. 아래 "위젯이 갱신되는 시점"을 보세요. |
 
