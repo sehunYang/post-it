@@ -10,7 +10,7 @@
 <link rel="icon" type="image/png" href="icons/signature.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="css/main.css?v=1">
+<link rel="stylesheet" href="css/main.css?v=2">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -70,7 +70,17 @@
 
     <div class="list-head">
       <h2>저장한 글</h2>
-      <p class="accordion-hint">📌 로 고정한 글 하나가 폰 위젯에 표시됩니다.</p>
+      <p class="accordion-hint">고정한 글 하나가 폰 위젯에 표시됩니다.<br>
+        글을 클릭해 선택하고, <kbd>Ctrl</kbd>+클릭으로 추가, <kbd>Shift</kbd>+클릭으로 범위 선택해 한 번에 지울 수 있습니다.</p>
+    </div>
+
+    <div id="selection-bar" class="selection-bar" hidden>
+      <b id="selection-count">0개 선택</b>
+      <div class="sim-actions">
+        <button id="btn-select-all" class="ghost-button" type="button">전체 선택</button>
+        <button id="btn-delete-selected" class="button danger" type="button">삭제</button>
+        <button id="btn-clear-selection" class="ghost-button" type="button">취소</button>
+      </div>
     </div>
 
     <ul id="list" class="notes"></ul>
@@ -86,6 +96,6 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="js/app.js?v=1"></script>
+<script type="module" src="js/app.js?v=2"></script>
 </body>
 </html>

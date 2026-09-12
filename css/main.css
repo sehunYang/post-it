@@ -72,11 +72,22 @@ h2{font-size:clamp(1.6rem,3vw,2.4rem);margin:.4rem 0 .5rem}
 .list-head{margin:3rem 0 1rem}
 .accordion-hint{color:var(--muted);font-size:.95rem;margin:0}
 
+/* 선택 바 */
+.selection-bar{position:sticky;top:5.75rem;z-index:5;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.9rem;padding:.8rem 1.1rem;border:1px solid var(--accent);border-left-width:3px;border-radius:16px;background:color-mix(in srgb,var(--accent-soft) 70%,var(--surface));box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.selection-bar b{font-size:1rem}
+.selection-bar .sim-actions{margin-left:auto}
+.button.danger{background:#dc2626;color:#fff}
+[data-theme=dark] .button.danger{background:#f87171;color:#2a0b0b}
+kbd{font-family:inherit;font-size:.85em;padding:.1rem .4rem;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;background:var(--surface)}
+
 /* notes */
 .notes{list-style:none;padding:0;margin:0;display:grid;gap:.75rem}
-.note{padding:1.15rem 1.25rem;background:var(--surface);border:1px solid var(--line);border-left:3px solid transparent;border-radius:16px;transition:border-color .2s ease}
+/* 클릭으로 카드를 고르므로 카드 안 텍스트는 드래그 선택되지 않게 합니다. 복사는 복사 버튼으로. */
+.note{padding:1.15rem 1.25rem;background:var(--surface);border:1px solid var(--line);border-left:3px solid transparent;border-radius:16px;transition:border-color .2s ease,background .2s ease;cursor:default;user-select:none;-webkit-user-select:none}
 .note:hover{border-color:var(--line);border-left-color:var(--accent)}
 .note.is-pinned{border-left-color:var(--accent);background:color-mix(in srgb,var(--accent-soft) 45%,var(--surface))}
+/* 선택 표시는 파일 탐색기처럼 하이라이트로만 — 체크박스를 넣으면 카드가 들썩입니다. */
+.note.is-selected{border-color:var(--accent);border-left-color:var(--accent);background:color-mix(in srgb,var(--accent-soft) 80%,var(--surface));box-shadow:inset 0 0 0 1px var(--accent)}
 .note-text{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:1.05rem}
 .note-foot{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:.9rem}
 .note-time{font-size:.82rem;color:var(--muted);margin-right:auto}
