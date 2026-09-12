@@ -40,7 +40,7 @@
 
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Post-it","alternateName":"Post-it 클립보드","url":"https://shy.ai.kr/post-it/","description":"데스크톱에서 적어둔 글을 갤럭시 홈 화면 위젯 한 번으로 클립보드에 붙여넣고, 폰에서 적은 글도 데스크톱에 바로 나타나는 양방향 클립보드 웹앱.","applicationCategory":"ProductivityApplication","operatingSystem":"Web, Android","inLanguage":"ko","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"author":{"@type":"Person","name":"양세훈","url":"https://shy.ai.kr/"},"softwareHelp":"https://github.com/sehunYang/post-it"}</script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="css/main.css?v=4">
+<link rel="stylesheet" href="css/main.css?v=5">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -73,6 +73,21 @@
     <h1>Firebase 설정이 <span>아직 비어 있습니다.</span></h1>
     <p class="lede"><code>js/firebase-config.js</code> 파일에 Firebase 웹 앱 설정값을 채워 주세요.</p>
     <p class="notice">자세한 절차는 저장소의 <code>docs/SETUP.md</code> 를 참고하세요.</p>
+  </section>
+
+  <!-- 허용되지 않은 계정으로 로그인한 경우 -->
+  <section id="denied" class="hero" hidden>
+    <p class="eyebrow">Private</p>
+    <h1>이 앱은 <span>개인용입니다.</span></h1>
+    <p class="lede">찾아와 주셔서 감사합니다. Post-it 은 만든 사람 한 명이 쓰려고 만든 클립보드 도구라,
+      다른 계정으로는 글을 저장하거나 볼 수 없습니다.</p>
+    <p class="notice">직접 쓰고 싶으시다면 소스가 모두 공개되어 있습니다.
+      <a href="https://github.com/sehunYang/post-it" target="_blank" rel="noopener">github.com/sehunYang/post-it</a> 의
+      <code>docs/SETUP.md</code> 를 따라 하시면 본인 Firebase 프로젝트로 똑같이 만드실 수 있습니다.</p>
+    <div class="sim-actions">
+      <button id="btn-signout-denied" class="button" type="button">로그아웃</button>
+      <a class="ghost-button" href="https://shy.ai.kr" target="_blank" rel="noopener">만든 사람 소개</a>
+    </div>
   </section>
 
   <!-- 로그인 후 -->
@@ -126,6 +141,6 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="js/app.js?v=4"></script>
+<script type="module" src="js/app.js?v=5"></script>
 </body>
 </html>

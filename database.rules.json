@@ -1,12 +1,20 @@
 {
+  // Post-it 보안 규칙
+  //
+  // 이 앱은 개인용입니다. 웹앱이 공개 주소에 있고 Firebase 웹 설정값도 공개
+  // 저장소에 있으므로, 누구든 Google 로그인까지는 할 수 있습니다.
+  // 실제 접근은 아래 OWNER_UID 한 사람으로 막습니다.
+  //
+  // 나중에 여러 사람에게 열고 싶으면 OWNER_UID 비교를 지우고
+  // root.child('allowed').hasChild(auth.uid) 같은 허용 목록으로 바꾸면 됩니다.
   "rules": {
     ".read": false,
     ".write": false,
 
     "users": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid",
+        ".read": "auth != null && auth.uid === $uid && $uid === 'PKfixfmWHlVOfBMPPvaileeINRC3'",
+        ".write": "auth != null && auth.uid === $uid && $uid === 'PKfixfmWHlVOfBMPPvaileeINRC3'",
 
         "pinned": {
           ".validate": "newData.isString() || !newData.exists()"

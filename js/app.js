@@ -131,6 +131,7 @@ onAuthStateChanged(auth, (user) => {
     orderedNotes = [];
     pinnedId = null;
     clearSelection();
+    $("denied").hidden = true;
     $("gate").hidden = false;
     $("app").hidden = true;
     return;
@@ -138,6 +139,7 @@ onAuthStateChanged(auth, (user) => {
 
   uid = user.uid;
   $("gate").hidden = true;
+  $("denied").hidden = true;
   $("app").hidden = false;
   $("account-name").textContent = user.displayName || "내 계정";
   $("account-mail").textContent = user.email || "";
@@ -159,10 +161,34 @@ onAuthStateChanged(auth, (user) => {
       render();
     },
     (err) => {
+      // 허용된 계정이 아니면 목록 읽기가 막힙니다. 고장난 앱처럼 보이지 않게 안내를 띄웁니다.
+      const denied =
+        err.code === "PERMISSION_DENIED" ||
+        /permission_denied/i.test(err.message || "");
+      if (denied) {
+        showDenied();
+        return;
+      }
       console.error(err);
-      toast("읽기 실패: " + (err.code || err.message) + " — 보안 규칙을 확인하세요.");
+      toast("읽기 실패: " + (err.code || err.message));
     }
   );
+});
+
+function showDenied() {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  notes = [];
+  orderedNotes = [];
+  pinnedId = null;
+  clearSelection();
+  $("app").hidden = true;
+  $("gate").hidden = true;
+  $("denied").hidden = false;
+}
+
+$("btn-signout-denied").addEventListener("click", () => {
+  $("denied").hidden = true;
+  signOut(auth);
 });
 
 /* ---------- 렌더 ---------- */
