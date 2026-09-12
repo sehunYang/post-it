@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{
+    --bg:#f7f7f4; --surface:#fff; --text:#171717; --muted:#666;
+    --line:#d9d9d4; --accent:#2563eb; --accent-soft:#dbeafe;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1200px;height:630px;overflow:hidden}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;
+    letter-spacing:-.01em; word-break:keep-all;
+    display:flex; align-items:center; gap:56px; padding:72px;
+  }
+  .left{flex:1;min-width:0}
+  .eyebrow{
+    text-transform:uppercase; letter-spacing:.12em;
+    font-size:20px; font-weight:800; color:var(--accent);
+  }
+  h1{
+    font-size:66px; line-height:1.16; letter-spacing:-.04em;
+    font-weight:800; margin:18px 0 26px;
+  }
+  h1 span{color:var(--accent)}
+  .lede{font-size:25px; line-height:1.55; color:var(--muted); max-width:560px}
+  .url{
+    margin-top:36px; display:inline-flex; align-items:center; gap:12px;
+    font-size:22px; font-weight:700;
+  }
+  .dot{width:10px;height:10px;border-radius:999px;background:var(--accent)}
+
+  /* 오른쪽: 실제 위젯 모양 카드 */
+  .widget{
+    width:360px; flex:0 0 360px;
+    background:var(--surface);
+    border:1px solid var(--line); border-left:6px solid var(--accent);
+    border-radius:28px; padding:28px 30px;
+    box-shadow:0 24px 60px rgba(0,0,0,.10);
+  }
+  .widget .tag{
+    text-transform:uppercase; letter-spacing:.12em;
+    font-size:14px; font-weight:800; color:var(--accent);
+  }
+  .widget .body{
+    margin:16px 0 22px; font-size:27px; line-height:1.45; font-weight:600;
+  }
+  .widget .foot{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:15px; color:var(--muted);
+  }
+  .pill{
+    background:var(--accent); color:#fff; font-weight:700;
+    padding:9px 18px; border-radius:999px; font-size:16px;
+  }
+</style>
+</head>
+<body>
+  <div class="left">
+    <p class="eyebrow">Clipboard Sync</p>
+    <h1>옮기고 싶은 말을<br><span>한 번에 붙여넣습니다.</span></h1>
+    <p class="lede">데스크톱에서 적어두면 갤럭시 홈 화면 위젯 한 번으로 붙여넣습니다. 폰에서 적은 것도 바로 데스크톱으로.</p>
+    <div class="url"><span class="dot"></span>shy.ai.kr/post-it</div>
+  </div>
+
+  <div class="widget">
+    <p class="tag">Post-it</p>
+    <p class="body">회의실 예약 링크<br>10월 14일 오후 3시</p>
+    <div class="foot">
+      <span>방금 동기화</span>
+      <span class="pill">눌러서 복사</span>
+    </div>
+  </div>
+</body>
+</html>

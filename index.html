@@ -5,18 +5,48 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>Post-it · 옮겨 적는 클립보드</title>
-<meta name="description" content="데스크톱에서 적어두면 갤럭시 위젯 한 번으로 붙여넣습니다. 폰에서 적은 것도 바로 데스크톱으로.">
-<meta name="theme-color" content="#f7f7f4">
-<link rel="icon" type="image/png" href="icons/signature.png">
+<meta name="description" content="데스크톱에서 적어두면 갤럭시 홈 화면 위젯 한 번으로 붙여넣습니다. 폰에서 적거나 공유한 글도 바로 데스크톱에 나타나는 양방향 클립보드 웹앱입니다.">
+<meta name="author" content="양세훈">
+<meta name="keywords" content="클립보드 동기화,안드로이드 위젯,PC 폰 텍스트 전송,갤럭시 위젯 클립보드,Firebase 웹앱">
+<link rel="canonical" href="https://shy.ai.kr/post-it/">
+
+<meta name="theme-color" content="#f7f7f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111210" media="(prefers-color-scheme: dark)">
+<meta name="application-name" content="Post-it">
+<meta name="apple-mobile-web-app-title" content="Post-it">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
+
+<!-- 공유했을 때 보이는 카드 -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Post-it">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://shy.ai.kr/post-it/">
+<meta property="og:title" content="Post-it · 옮겨 적는 클립보드">
+<meta property="og:description" content="데스크톱에서 적어두면 갤럭시 홈 화면 위젯 한 번으로 붙여넣습니다. 폰에서 적은 것도 바로 데스크톱으로.">
+<meta property="og:image" content="https://shy.ai.kr/post-it/icons/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="옮기고 싶은 말을 한 번에 붙여넣습니다 — Post-it 위젯 미리보기">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Post-it · 옮겨 적는 클립보드">
+<meta name="twitter:description" content="데스크톱에서 적어두면 갤럭시 홈 화면 위젯 한 번으로 붙여넣습니다.">
+<meta name="twitter:image" content="https://shy.ai.kr/post-it/icons/og.png">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Post-it","alternateName":"Post-it 클립보드","url":"https://shy.ai.kr/post-it/","description":"데스크톱에서 적어둔 글을 갤럭시 홈 화면 위젯 한 번으로 클립보드에 붙여넣고, 폰에서 적은 글도 데스크톱에 바로 나타나는 양방향 클립보드 웹앱.","applicationCategory":"ProductivityApplication","operatingSystem":"Web, Android","inLanguage":"ko","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"author":{"@type":"Person","name":"양세훈","url":"https://shy.ai.kr/"},"softwareHelp":"https://github.com/sehunYang/post-it"}</script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="css/main.css?v=3">
+<link rel="stylesheet" href="css/main.css?v=4">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 
 <header class="site-header">
-  <a class="brand" href="./" aria-label="Post-it 처음으로"><img src="icons/signature.png" alt="" width="2380" height="2473"></a>
+  <a class="brand" href="./" aria-label="Post-it 처음으로"><img src="icons/signature.png" alt="" width="160" height="166"></a>
   <span class="wordmark">Post-it</span>
   <nav aria-label="주요 메뉴"><a href="https://shy.ai.kr" target="_blank" rel="noopener">포트폴리오</a></nav>
   <button id="theme-toggle" class="icon-button" type="button" aria-label="색상 모드 전환">◐</button>
@@ -96,6 +126,6 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script type="module" src="js/app.js?v=3"></script>
+<script type="module" src="js/app.js?v=4"></script>
 </body>
 </html>
