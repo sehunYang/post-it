@@ -54,7 +54,8 @@
 
         <receiver
             android:name=".PostItWidget"
-            android:exported="false">
+            android:exported="false"
+            android:label="@string/widget_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="kr.ai.shy.postit.ACTION_REFRESH" />
@@ -62,6 +63,19 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
+        </receiver>
+
+        <!-- 2x2 정사각 위젯. 동작은 위와 같고 레이아웃만 좁습니다. -->
+        <receiver
+            android:name=".PostItWidgetSmall"
+            android:exported="false"
+            android:label="@string/widget_label_small">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_small" />
         </receiver>
     </application>
 </manifest>

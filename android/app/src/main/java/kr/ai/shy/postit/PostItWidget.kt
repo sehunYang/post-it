@@ -12,24 +12,39 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 
-class PostItWidget : AppWidgetProvider() {
+/**
+ * 가로로 넓은 기본 위젯(4x2).
+ *
+ * 2x2 정사각 위젯은 [PostItWidgetSmall] 이며, 동작은 이 클래스를 그대로 물려받고
+ * 레이아웃만 다릅니다. 위젯 선택 화면에는 두 가지가 따로 보입니다.
+ */
+open class PostItWidget : AppWidgetProvider() {
 
     companion object {
         const val ACTION_REFRESH = "kr.ai.shy.postit.ACTION_REFRESH"
         private const val SYNC_WORK = "postit.widget.sync"
 
-        /** 캐시에 있는 값으로 모든 위젯을 다시 그립니다. */
+        /** 화면에 올라올 수 있는 모든 위젯 종류와 각자의 레이아웃. */
+        private val PROVIDERS: List<Pair<Class<out PostItWidget>, Int>> = listOf(
+            PostItWidget::class.java to R.layout.widget_postit,
+            PostItWidgetSmall::class.java to R.layout.widget_postit_small
+        )
+
+        /** 캐시에 있는 값으로 모든 크기의 위젯을 다시 그립니다. */
         fun renderAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
-            val ids = manager.getAppWidgetIds(ComponentName(context, PostItWidget::class.java))
-            if (ids.isEmpty()) return
             val state = Repo.readCache(context)
-            for (id in ids) manager.updateAppWidget(id, buildViews(context, state))
+
+            for ((provider, layout) in PROVIDERS) {
+                val ids = manager.getAppWidgetIds(ComponentName(context, provider))
+                if (ids.isEmpty()) continue
+                val views = buildViews(context, layout, state)
+                for (id in ids) manager.updateAppWidget(id, views)
+            }
         }
 
-        /** 위젯 하나를 그립니다. */
-        private fun buildViews(context: Context, state: WidgetState): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.widget_postit)
+        private fun buildViews(context: Context, layout: Int, state: WidgetState): RemoteViews {
+            val views = RemoteViews(context.packageName, layout)
 
             when (state.kind) {
                 WidgetState.Kind.SIGNED_OUT -> {
@@ -42,7 +57,7 @@ class PostItWidget : AppWidgetProvider() {
                 }
                 WidgetState.Kind.OK -> {
                     views.setTextViewText(R.id.widget_text, state.text)
-                    views.setTextViewText(R.id.widget_footer, relativeTime(context, state.syncedAt))
+                    views.setTextViewText(R.id.widget_footer, relativeTime(state.syncedAt))
                 }
             }
 
@@ -56,7 +71,6 @@ class PostItWidget : AppWidgetProvider() {
                 R.id.widget_save_clip,
                 activityIntent(context, ClipActivity.ACTION_SAVE_CLIPBOARD, 2)
             )
-            // 새로 고침
             views.setOnClickPendingIntent(R.id.widget_refresh, refreshIntent(context))
 
             return views
@@ -81,7 +95,7 @@ class PostItWidget : AppWidgetProvider() {
             )
         }
 
-        private fun relativeTime(context: Context, syncedAt: Long): String {
+        private fun relativeTime(syncedAt: Long): String {
             if (syncedAt <= 0L) return ""
             val minutes = (System.currentTimeMillis() - syncedAt) / 60_000L
             return when {
@@ -115,6 +129,11 @@ class PostItWidget : AppWidgetProvider() {
     }
 
     override fun onDisabled(context: Context) {
-        WorkManager.getInstance(context).cancelUniqueWork(SYNC_WORK)
+        // 두 종류 모두 사라졌을 때만 주기 작업을 멈춥니다.
+        val manager = AppWidgetManager.getInstance(context)
+        val stillPlaced = PROVIDERS.any { (provider, _) ->
+            manager.getAppWidgetIds(ComponentName(context, provider)).isNotEmpty()
+        }
+        if (!stillPlaced) WorkManager.getInstance(context).cancelUniqueWork(SYNC_WORK)
     }
 }

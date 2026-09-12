@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2x2 정사각 위젯. 좁은 만큼 eyebrow 를 빼고 본문에 자리를 몰아줍니다. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_bg"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/widget_text"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_body_ripple"
+        android:text="@string/widget_empty"
+        android:textColor="@color/text"
+        android:textSize="14sp"
+        android:lineSpacingMultiplier="1.2"
+        android:ellipsize="end"
+        android:gravity="top|start" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_footer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/muted"
+            android:textSize="9sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <ImageView
+            android:id="@+id/widget_save_clip"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:padding="4dp"
+            android:src="@drawable/ic_clipboard_add"
+            android:background="@drawable/widget_body_ripple"
+            android:contentDescription="@string/widget_save_clip" />
+
+        <ImageView
+            android:id="@+id/widget_refresh"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:padding="4dp"
+            android:src="@drawable/ic_refresh"
+            android:background="@drawable/widget_body_ripple"
+            android:contentDescription="@string/widget_refresh" />
+    </LinearLayout>
+</LinearLayout>

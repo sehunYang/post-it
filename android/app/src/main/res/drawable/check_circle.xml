@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 선택 모드의 체크 동그라미. 선택되면 accent 로 채우고 ✓ 를 넣습니다. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/accent" />
+</shape>

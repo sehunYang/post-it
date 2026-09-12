@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Post-it</string>
-    <string name="widget_label">Post-it 클립보드</string>
+    <string name="widget_label">Post-it 클립보드 (넓게)</string>
     <string name="widget_description">고정한 글을 눌러 클립보드로 복사합니다.</string>
+    <string name="widget_label_small">Post-it 클립보드 (2x2)</string>
+    <string name="widget_description_small">고정한 글을 눌러 클립보드로 복사합니다. 정사각 크기.</string>
     <string name="share_label">Post-it 에 저장</string>
 
     <string name="eyebrow">CLIPBOARD SYNC</string>
@@ -17,7 +19,8 @@
     <string name="save_edit">수정 저장</string>
     <string name="cancel_edit">수정 취소</string>
     <string name="list_title">저장한 글</string>
-    <string name="list_hint">고정한 글 하나가 홈 화면 위젯에 표시됩니다.</string>
+    <string name="list_hint">고정한 글 하나가 홈 화면 위젯에 표시됩니다.
+글을 길게 누르면 여러 개를 한 번에 지울 수 있습니다.</string>
     <string name="empty">아직 저장한 글이 없습니다.</string>
     <string name="char_count">%1$d자</string>
 
@@ -27,6 +30,17 @@
     <string name="action_edit">수정</string>
     <string name="action_delete">삭제</string>
     <string name="pinned_flag">위젯 표시 중</string>
+
+    <!-- 길게 눌러 들어가는 다중 선택 모드 -->
+    <string name="selection_count">%1$d개 선택</string>
+    <string name="select_all">전체 선택</string>
+    <string name="deselect_all">선택 해제</string>
+    <string name="delete_selected">삭제</string>
+    <string name="exit_selection">취소</string>
+    <string name="selection_hint">글을 길게 누르면 여러 개를 한 번에 지울 수 있습니다.</string>
+    <string name="delete_many_title">%1$d개를 삭제할까요?</string>
+    <string name="delete_many_message">되돌릴 수 없습니다.</string>
+    <string name="deleted_many">%1$d개를 삭제했습니다.</string>
 
     <string name="copied">클립보드에 복사했습니다.</string>
     <string name="saved">저장했습니다.</string>

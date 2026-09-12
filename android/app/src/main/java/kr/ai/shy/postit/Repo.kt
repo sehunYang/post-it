@@ -71,9 +71,24 @@ object Repo {
     }
 
     suspend fun deleteNote(uid: String, id: String) {
-        notesRef(uid).child(id).removeValue().await()
+        deleteNotes(uid, listOf(id))
+    }
+
+    /**
+     * 여러 글을 한 번의 쓰기로 지웁니다.
+     * 고정된 글이 포함돼 있으면 같은 쓰기에서 고정도 함께 해제하므로,
+     * 중간 상태(없는 글을 가리키는 pinned)가 생기지 않습니다.
+     */
+    suspend fun deleteNotes(uid: String, ids: List<String>) {
+        if (ids.isEmpty()) return
+
+        val updates = mutableMapOf<String, Any?>()
+        for (id in ids) updates["notes/$id"] = null
+
         val pinned = pinnedRef(uid).get().await().getValue(String::class.java)
-        if (pinned == id) pinnedRef(uid).setValue(null).await()
+        if (pinned != null && pinned in ids) updates["pinned"] = null
+
+        rootRef(uid).updateChildren(updates).await()
     }
 
     suspend fun setPinned(uid: String, id: String?) {

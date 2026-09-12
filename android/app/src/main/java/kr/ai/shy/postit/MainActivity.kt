@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.PopupMenu
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
@@ -36,6 +37,10 @@ class MainActivity : AppCompatActivity() {
     private var pinnedId: String? = null
     private var editingId: String? = null
 
+    /** 다중 선택 모드. 비어 있지 않은 동안만 켜집니다. */
+    private var selectionMode = false
+    private val selectedIds = linkedSetOf<String>()
+
     private var listener: ValueEventListener? = null
     private var listeningUid: String? = null
 
@@ -50,12 +55,21 @@ class MainActivity : AppCompatActivity() {
 
         setUpList()
         setUpComposer()
+        setUpSelection()
 
         binding.btnSignin.setOnClickListener { signIn() }
         binding.btnSignout.setOnClickListener { signOut() }
 
         Repo.auth.addAuthStateListener(authListener)
+
+        // 선택 모드에서는 뒤로가기가 앱을 닫지 않고 모드만 빠져나갑니다.
+        // (targetSdk 35+ 의 예측형 뒤로가기에서는 onBackPressed() 가 호출되지 않으므로 디스패처를 씁니다.)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() = exitSelection()
+        }.also { backCallback = it })
     }
+
+    private var backCallback: OnBackPressedCallback? = null
 
     override fun onDestroy() {
         if (firebaseAvailable) {
@@ -221,18 +235,110 @@ class MainActivity : AppCompatActivity() {
         adapter = NoteAdapter(
             onCopy = ::copyToClipboard,
             onPin = { note, pinned -> togglePin(note, pinned) },
-            onMore = ::showMore
+            onMore = ::showMore,
+            onLongPress = ::enterSelection,
+            onToggleSelect = ::toggleSelect
         )
         binding.list.layoutManager = LinearLayoutManager(this)
         binding.list.adapter = adapter
     }
 
     private fun render() {
+        // 선택해 둔 글이 다른 기기에서 지워졌을 수 있으므로 실제 목록과 맞춥니다.
+        if (selectionMode) {
+            selectedIds.retainAll(notes.map { it.id }.toSet())
+            if (selectedIds.isEmpty()) exitSelection() else updateSelectionBar()
+        }
+
         val rows = notes
-            .map { NoteRow(it, it.id == pinnedId) }
+            .map { NoteRow(it, it.id == pinnedId, selectionMode, it.id in selectedIds) }
             .sortedByDescending { it.pinned }
         adapter.submitList(rows)
         binding.empty.visibility = if (rows.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    /* ---------- 다중 선택 ---------- */
+
+    private fun setUpSelection() {
+        binding.btnExitSelection.setOnClickListener { exitSelection() }
+        binding.btnDeleteSelected.setOnClickListener { confirmDeleteSelected() }
+        binding.btnSelectAll.setOnClickListener {
+            if (selectedIds.size == notes.size) {
+                // 전부 선택된 상태에서 다시 누르면 하나만 남기지 않고 모드를 빠져나갑니다.
+                exitSelection()
+            } else {
+                selectedIds.clear()
+                selectedIds.addAll(notes.map { it.id })
+                render()
+            }
+        }
+    }
+
+    private fun enterSelection(note: Note) {
+        if (selectionMode) return
+        selectionMode = true
+        selectedIds.clear()
+        selectedIds.add(note.id)
+        cancelEdit()
+        binding.composer.visibility = View.GONE
+        binding.selectionBar.visibility = View.VISIBLE
+        backCallback?.isEnabled = true
+        render()
+    }
+
+    private fun exitSelection() {
+        selectionMode = false
+        selectedIds.clear()
+        binding.selectionBar.visibility = View.GONE
+        binding.composer.visibility = View.VISIBLE
+        backCallback?.isEnabled = false
+        render()
+    }
+
+    private fun toggleSelect(note: Note) {
+        if (!selectedIds.remove(note.id)) selectedIds.add(note.id)
+        if (selectedIds.isEmpty()) exitSelection() else render()
+    }
+
+    private fun updateSelectionBar() {
+        binding.selectionCount.text = getString(R.string.selection_count, selectedIds.size)
+        binding.btnSelectAll.setText(
+            if (selectedIds.size == notes.size) R.string.deselect_all else R.string.select_all
+        )
+    }
+
+    private fun confirmDeleteSelected() {
+        val uid = Repo.uid() ?: return
+        val ids = selectedIds.toList()
+        if (ids.isEmpty()) return
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.delete_many_title, ids.size))
+            .setMessage(R.string.delete_many_message)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.action_delete) { _, _ ->
+                binding.btnDeleteSelected.isEnabled = false
+                lifecycleScope.launch {
+                    runCatching { Repo.deleteNotes(uid, ids) }
+                        .onSuccess {
+                            exitSelection()
+                            Toast.makeText(
+                                this@MainActivity,
+                                getString(R.string.deleted_many, ids.size),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        .onFailure {
+                            Toast.makeText(
+                                this@MainActivity,
+                                it.localizedMessage ?: "삭제에 실패했습니다.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    binding.btnDeleteSelected.isEnabled = true
+                }
+            }
+            .show()
     }
 
     /* ---------- 입력 ---------- */
