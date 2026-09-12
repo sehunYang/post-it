@@ -10,6 +10,9 @@
 [data-theme=dark]{color-scheme:dark;--bg:#111210;--surface:#191a18;--text:#f2f2ed;--muted:#a8aaa2;--line:#343630;--accent:#7db1ff;--accent-soft:#172a46}
 
 *{box-sizing:border-box}
+/* display 를 지정한 클래스가 브라우저 기본 [hidden] 규칙을 이겨 버리므로 여기서 못박습니다.
+   (선택 바가 항상 떠 있던 원인) */
+[hidden]{display:none!important}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.7;letter-spacing:-.01em;word-break:keep-all;overflow-wrap:normal;min-height:100vh;display:flex;flex-direction:column}
 a{color:inherit}
