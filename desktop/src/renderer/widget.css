@@ -1,0 +1,58 @@
+/* Post-it 데스크톱 위젯 — 웹앱(shy.ai.kr 디자인 시스템)과 같은 색과 글꼴 */
+:root{
+  --bg:#f7f7f4; --surface:#fff; --text:#171717; --muted:#666;
+  --line:#d9d9d4; --accent:#2563eb; --accent-soft:#dbeafe; --danger:#c2410c;
+  --font:"Pretendard Variable",Pretendard,-apple-system,"Segoe UI Variable","Segoe UI","Malgun Gothic",system-ui,sans-serif;
+  /* 커서가 없을 때의 불투명도. 글자는 읽히지만 뒤 화면이 비칩니다. */
+  --idle-opacity:.4;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#111210;--surface:#191a18;--text:#f2f2ed;--muted:#a8aaa2;--line:#343630;--accent:#7db1ff;--accent-soft:#172a46;--danger:#fb923c;color-scheme:dark}
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+body{font-family:var(--font);color:var(--text);font-size:14px;line-height:1.55;letter-spacing:-.01em;word-break:keep-all;overflow-wrap:anywhere;user-select:none;padding:6px}
+button{font:inherit;color:inherit}
+
+.card{
+  height:100%;display:flex;flex-direction:column;
+  border:1px solid var(--line);border-radius:16px;
+  background:color-mix(in srgb,var(--surface) 94%,transparent);
+  box-shadow:0 6px 18px rgba(0,0,0,.14);
+  opacity:var(--idle-opacity);
+  transition:opacity .18s ease;
+  overflow:hidden;
+}
+/* 커서가 위에 있거나, 방금 무언가를 해서 알림을 보여 주는 동안에는 또렷하게 */
+html.is-hover .card,
+.card.is-busy{opacity:1}
+
+.bar{display:flex;align-items:center;gap:.5rem;padding:.45rem .5rem .2rem .85rem;-webkit-app-region:drag}
+.brand{display:flex;align-items:center;gap:.45rem;font-weight:800;letter-spacing:-.03em;font-size:.86rem}
+.dot{width:.5rem;height:.5rem;border-radius:999px;background:var(--line)}
+.dot.is-online{background:#16a34a}
+.tools{margin-left:auto;display:flex;gap:.1rem;-webkit-app-region:no-drag}
+.tool{display:grid;place-items:center;width:1.75rem;height:1.75rem;padding:0;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer}
+.tool:hover{background:var(--accent-soft);color:var(--accent)}
+.tool svg{width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.pane,.note{flex:1;min-height:0;margin:0 .5rem;-webkit-app-region:no-drag}
+.pane{display:flex;flex-direction:column;justify-content:center;gap:.6rem;padding:0 .35rem}
+.hint{margin:0;color:var(--muted);font-size:.85rem}
+.primary{align-self:flex-start;padding:.45rem .95rem;border:0;border-radius:999px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+@media (prefers-color-scheme:dark){.primary{color:#0d1420}}
+.primary:disabled{opacity:.55;cursor:default}
+
+.note{display:block;text-align:left;padding:.4rem .5rem;border:1px solid transparent;border-radius:10px;background:transparent;cursor:pointer}
+.note:hover{border-color:var(--line);background:var(--bg)}
+.note:active{transform:translateY(1px)}
+.note:focus-visible,.tool:focus-visible,.primary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.note-text{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;white-space:pre-wrap;font-size:.95rem}
+.note.is-empty .note-text{color:var(--muted);font-size:.85rem}
+
+.foot{padding:.2rem .85rem .5rem;font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status.is-ok{color:var(--accent);font-weight:600}
+.status.is-error{color:var(--danger);font-weight:600}

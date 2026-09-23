@@ -38,3 +38,25 @@
 - `https://github.com/sehunYang/post-it/releases/latest/download/post-it.apk` 가 새 파일을 내려주는지
 - 폰에 설치된 이전 버전 위에 그대로 덮어 설치되는지 (서명 키가 같아야 됩니다)
 - 앱을 열었을 때 업데이트 배너가 사라졌는지
+
+## 바탕화면 위젯 (Windows) 함께 내기
+
+웹앱의 내려받기 버튼은 `releases/latest/download/post-it-desktop-setup.exe` 를 가리킵니다.
+"최신 릴리스"는 하나뿐이므로 **APK 와 설치 파일을 같은 릴리스에 함께 올려야** 둘 다 끊기지 않습니다.
+
+1. `desktop/package.json` 의 `version` 을 올립니다.
+2. 빌드와 검증:
+   ```bash
+   cd desktop
+   npm run test:e2e
+   npm run dist            # → desktop/release/post-it-desktop-setup.exe
+   npm run test:sandbox    # 깨끗한 Windows 에서 설치·자동 실행 확인
+   ```
+3. 릴리스에 함께 올립니다:
+   ```bash
+   gh release create v1.2 post-it.apk desktop/release/post-it-desktop-setup.exe --title "v1.2" --notes "…"
+   # 이미 만든 릴리스에 더하려면
+   gh release upload v1.2 desktop/release/post-it-desktop-setup.exe
+   ```
+
+설치 파일은 코드 서명이 없어서 처음 열 때 SmartScreen 경고가 뜹니다(추가 정보 → 실행).

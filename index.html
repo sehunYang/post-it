@@ -40,7 +40,7 @@
 
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Post-it","alternateName":"Post-it 클립보드","url":"https://shy.ai.kr/post-it/","description":"데스크톱에서 적어둔 글을 갤럭시 홈 화면 위젯 한 번으로 클립보드에 붙여넣고, 폰에서 적은 글도 데스크톱에 바로 나타나는 양방향 클립보드 웹앱.","applicationCategory":"ProductivityApplication","operatingSystem":"Web, Android","inLanguage":"ko","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"author":{"@type":"Person","name":"양세훈","url":"https://shy.ai.kr/"},"softwareHelp":"https://github.com/sehunYang/post-it"}</script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="css/main.css?v=6">
+<link rel="stylesheet" href="css/main.css?v=7">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -113,6 +113,23 @@
         </ol>
       </div>
       <p class="phone-link muted">QR이 안 찍히면 폰 브라우저에 <span id="install-url">shy.ai.kr/post-it/install/</span> 을 입력하세요.</p>
+    </details>
+
+    <details id="desktop-panel" class="phone-panel">
+      <summary>
+        <span class="eyebrow">Windows</span>
+        <b>바탕화면 위젯 설치하기</b>
+        <span class="muted">고정한 글을 화면 구석에 띄워 두고 클릭 한 번으로 복사</span>
+      </summary>
+      <div class="desk-body">
+        <a class="button" href="https://github.com/sehunYang/post-it/releases/latest/download/post-it-desktop-setup.exe">Windows 위젯 내려받기</a>
+        <ol class="phone-steps">
+          <li>내려받은 <code>post-it-desktop-setup.exe</code> 를 엽니다. "Windows의 PC 보호" 창이 뜨면 <b>추가 정보 → 실행</b>을 누릅니다.</li>
+          <li>위젯의 <b>Google 계정으로 로그인</b>을 누르고, 브라우저에서 <b>지금 이 계정</b>으로 로그인합니다.</li>
+          <li>평소에는 반투명하게 비켜 있다가 마우스를 올리면 또렷해집니다. 컴퓨터를 켜면 저절로 뜹니다.</li>
+          <li>끄고 켜기는 작업 표시줄 오른쪽의 Post-it 트레이 아이콘을 누르면 됩니다.</li>
+        </ol>
+      </div>
     </details>
 
     <div class="composer">

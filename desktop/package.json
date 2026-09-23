@@ -1,0 +1,65 @@
+{
+  "name": "post-it-desktop",
+  "productName": "Post-it",
+  "version": "1.0.0",
+  "description": "Post-it 데스크톱 위젯 — 고정한 글을 바탕화면에 띄우고 클릭 한 번으로 복사합니다.",
+  "author": "양세훈",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "test:e2e": "npm run build && firebase --config ../firebase.json emulators:exec --only auth,database --project demo-postit \"playwright test\"",
+    "dist": "npm run build && electron-builder --win nsis --publish never",
+    "test:sandbox": "powershell -NoProfile -ExecutionPolicy Bypass -File sandbox/run.ps1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "firebase": "^12.19.0",
+    "firebase-tools": "^15.30.2"
+  },
+  "build": {
+    "appId": "kr.ai.shy.postit.desktop",
+    "productName": "Post-it",
+    "copyright": "© 양세훈",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "src/**/*",
+      "!src/renderer/widget.js",
+      "!src/login/**",
+      "!src/shared/**",
+      "dist/**/*",
+      "assets/tray.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "artifactName": "post-it-desktop-setup.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Post-it 위젯",
+      "deleteAppDataOnUninstall": false,
+      "include": "assets/installer.nsh"
+    }
+  }
+}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self'; img-src 'self' data:; connect-src https://*.googleapis.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com http://127.0.0.1:9099 http://127.0.0.1:9000 ws://127.0.0.1:9000">
+<meta name="color-scheme" content="light dark">
+<title>Post-it</title>
+<link rel="stylesheet" href="widget.css">
+</head>
+<body>
+<article id="card" class="card is-loading" aria-label="Post-it 위젯">
+  <header class="bar">
+    <span class="brand"><i id="dot" class="dot" aria-hidden="true"></i>Post-it</span>
+    <div class="tools">
+      <button id="btn-save-clip" class="tool" type="button" title="지금 클립보드를 새 글로 저장" aria-label="지금 클립보드를 새 글로 저장" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M8 5.5H6.5A1.5 1.5 0 0 0 5 7v12.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5H16"/><path d="M12 10.5v6M9 13.5h6"/></svg>
+      </button>
+      <button id="btn-web" class="tool" type="button" title="웹앱 열기" aria-label="웹앱 열기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5"/><path d="M19 5l-8 8"/><path d="M17 14v4.5A1.5 1.5 0 0 1 15.5 20h-10A1.5 1.5 0 0 1 4 18.5v-10A1.5 1.5 0 0 1 5.5 7H10"/></svg>
+      </button>
+      <button id="btn-hide" class="tool" type="button" title="위젯 숨기기 (트레이 아이콘으로 다시 켭니다)" aria-label="위젯 숨기기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 로그인 전 -->
+  <section id="signed-out" class="pane" hidden>
+    <p class="hint">웹앱·폰과 같은 Google 계정으로 로그인하면 고정한 글이 여기에 뜹니다.</p>
+    <button id="btn-signin" class="primary" type="button">Google 계정으로 로그인</button>
+  </section>
+
+  <!-- 로그인 후 -->
+  <button id="note" class="note" type="button" hidden title="눌러서 클립보드로 복사">
+    <span id="note-text" class="note-text"></span>
+  </button>
+
+  <footer class="foot">
+    <span id="status" class="status" role="status" aria-live="polite">불러오는 중…</span>
+  </footer>
+</article>
+<script type="module" src="../../dist/widget.js"></script>
+</body>
+</html>

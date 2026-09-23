@@ -18,6 +18,20 @@
 
 폰 설치 페이지: **<https://shy.ai.kr/post-it/install/>**
 
+### Windows 바탕화면 위젯 (선택)
+
+폰 위젯과 같은 일을 데스크톱에서 합니다. 고정한 글을 화면 구석에 띄워 두고, 누르면 클립보드로 복사합니다.
+
+1. 웹앱의 **"바탕화면 위젯 설치하기"** 에서 `post-it-desktop-setup.exe` 를 내려받아 엽니다.
+   서명되지 않은 앱이라 "Windows의 PC 보호" 창이 뜨면 **추가 정보 → 실행**을 누릅니다.
+2. 위젯의 **Google 계정으로 로그인** → 기본 브라우저가 열리면 **같은 Google 계정**으로 로그인
+3. 끝. 평소에는 **반투명**하게 비켜 있다가 **마우스를 올리면 또렷**해지고, **컴퓨터를 켜면 저절로** 뜹니다.
+
+- **끄고 켜기**: 작업 표시줄 오른쪽의 Post-it 트레이 아이콘을 누르거나, 위젯의 ✕ 를 누릅니다.
+  트레이 메뉴에서 항상 위에 표시 · Windows 시작 시 자동 실행 · 위치 초기화 · 로그아웃 · 종료를 고릅니다.
+- **옮기기**: 위젯 윗줄(Post-it 글자 쪽)을 잡고 끌면 됩니다. 위치는 기억됩니다.
+- **클립보드 아이콘**: 지금 클립보드의 글을 새 글로 저장합니다(데스크톱 → 폰).
+
 ## 알아둘 점
 
 - **무료입니다.** 만든 사람의 Firebase 무료 한도 안에서 여러 사람이 같이 씁니다. 그래서 글 하나는 **5,000자까지** 저장됩니다.
@@ -45,6 +59,7 @@ GitHub Pages 웹앱                             네이티브 앱 + 홈 화면 �
 - **웹앱** — GitHub Pages (정적 호스팅, 무료)
 - **데이터베이스** — Firebase Realtime Database (Spark 무료 티어). 규칙은 [`database.rules.json`](database.rules.json)
 - **위젯** — 네이티브 안드로이드 앱 (Kotlin). APK는 [Releases](https://github.com/sehunYang/post-it/releases)
+- **바탕화면 위젯** — Windows용 Electron 앱. 설치 파일도 같은 Releases 에 있습니다
 - **디자인** — [shy.ai.kr](https://shy.ai.kr) 의 디자인 시스템을 그대로 따릅니다.
 
 ## 폴더
@@ -53,6 +68,7 @@ GitHub Pages 웹앱                             네이티브 앱 + 홈 화면 �
 |---|---|
 | `index.html`, `css/`, `js/` | 웹앱 (GitHub Pages가 저장소 루트를 그대로 서빙) |
 | `install/` | 폰 설치 안내 페이지 (QR이 여기로 옵니다) |
+| `desktop/` | Windows 바탕화면 위젯 (Electron) — [desktop/README.md](desktop/README.md) |
 | `database.rules.json` | Realtime Database 보안 규칙 |
 | `android/` | 안드로이드 앱 + 위젯 (Gradle 프로젝트) |
 | `docs/SETUP.md` | 소유자용: 처음 한 번 하는 Firebase 설정 |
