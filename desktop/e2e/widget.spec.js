@@ -211,14 +211,15 @@ test.describe.serial("데스크톱 위젯", () => {
     }
 
     await expect(page.locator("#signed-out")).toBeHidden({ timeout: 15_000 });
-    await expect(page.locator("#note")).toBeVisible();
-    await expect(page.locator("#note-text")).toContainText("고정한 글이 없습니다");
+    await expect(page.locator("#note-input")).toBeVisible();
+    await expect(page.locator("#note-input")).toHaveValue("");
+    await expect(page.locator("#status")).toHaveText("적으면 저장되고 위젯에 고정됩니다");
     const user = await onlyUser();
     expect(user.email).toBe("teacher@example.com");
     uid = user.localId;
   });
 
-  test("웹앱에서 고정한 글이 실시간으로 뜨고, 누르면 클립보드로 복사된다", async () => {
+  test("웹앱에서 고정한 글이 실시간으로 뜨고, 복사 버튼으로 클립보드에 복사된다", async () => {
     const now = Date.now();
     await dbPut(`users/${uid}`, {
       notes: {
@@ -227,11 +228,11 @@ test.describe.serial("데스크톱 위젯", () => {
       },
       pinned: "n2"
     });
-    await expect(page.locator("#note-text")).toHaveText("회의실 와이파이 비밀번호\npostit-2026!");
-    await expect(page.locator("#status")).toContainText("눌러서 복사");
+    await expect(page.locator("#note-input")).toHaveValue("회의실 와이파이 비밀번호\npostit-2026!");
+    await expect(page.locator("#status")).toContainText("위젯에 고정됨");
 
     await main(app, ({ clipboard }) => clipboard.writeText("이전 내용"));
-    await page.locator("#note").click();
+    await page.locator("#btn-copy").click();
     await expect(page.locator("#status")).toHaveText("클립보드에 복사했습니다");
     expect(await main(app, ({ clipboard }) => clipboard.readText())).toBe("회의실 와이파이 비밀번호\npostit-2026!");
     // 알림이 떠 있는 동안에는 커서가 없어도 또렷합니다.
@@ -239,19 +240,19 @@ test.describe.serial("데스크톱 위젯", () => {
 
     // 다른 기기에서 고정을 바꾸면 바로 따라갑니다.
     await dbPut(`users/${uid}/pinned`, "n1");
-    await expect(page.locator("#note-text")).toHaveText("첫 번째 글");
+    await expect(page.locator("#note-input")).toHaveValue("첫 번째 글");
   });
 
-  test("클립보드 아이콘: 지금 클립보드를 새 글로 저장한다 (고정은 그대로)", async () => {
+  test("클립보드 아이콘: 지금 클립보드를 새 글로 저장하고 곧바로 고정한다", async () => {
     await main(app, ({ clipboard }) => clipboard.writeText("  데스크톱에서 보낸 글  "));
     await page.locator("#btn-save-clip").click();
-    await expect(page.locator("#status")).toHaveText("클립보드를 새 글로 저장했습니다");
+    await expect(page.locator("#status")).toHaveText("클립보드를 새 글로 저장하고 고정했습니다");
 
     const notes = await dbGet(`users/${uid}/notes`);
-    const saved = Object.values(notes).find((n) => n.text === "데스크톱에서 보낸 글");
-    expect(saved).toBeTruthy();
+    const [savedId, saved] = Object.entries(notes).find(([, n]) => n.text === "데스크톱에서 보낸 글");
     expect(typeof saved.createdAt).toBe("number");
-    expect(await dbGet(`users/${uid}/pinned`)).toBe("n1");
+    expect(await dbGet(`users/${uid}/pinned`)).toBe(savedId);
+    await expect(page.locator("#note-input")).toHaveValue("데스크톱에서 보낸 글");
 
     // 빈 클립보드와 너무 긴 글은 저장하지 않습니다.
     await main(app, ({ clipboard }) => clipboard.writeText("   "));
@@ -261,6 +262,65 @@ test.describe.serial("데스크톱 위젯", () => {
     await page.locator("#btn-save-clip").click();
     await expect(page.locator("#status")).toHaveText("글 하나는 5,000자까지 저장됩니다");
     expect(Object.keys(await dbGet(`users/${uid}/notes`))).toHaveLength(3);
+  });
+
+  const pinnedText = async () => {
+    const id = await dbGet(`users/${uid}/pinned`);
+    return id ? dbGet(`users/${uid}/notes/${id}/text`) : null;
+  };
+
+  test("본문을 바로 고쳐 쓰면 멈춘 뒤 저장되고, 복사 버튼은 고친 글을 복사한다", async () => {
+    const id = await dbGet(`users/${uid}/pinned`);
+    await page.locator("#note-input").fill("고친 글\n둘째 줄");
+    await expect.poll(() => dbGet(`users/${uid}/notes/${id}/text`)).toBe("고친 글\n둘째 줄");
+    expect(await dbGet(`users/${uid}/pinned`)).toBe(id);
+    expect(Object.keys(await dbGet(`users/${uid}/notes`))).toHaveLength(3);
+
+    await page.locator("#btn-copy").click();
+    await expect(page.locator("#status")).toHaveText("클립보드에 복사했습니다");
+    expect(await main(app, ({ clipboard }) => clipboard.readText())).toBe("고친 글\n둘째 줄");
+
+    // 다 지우면 저장하지 않고(규칙상 빈 글은 없음) 복사 버튼도 꺼집니다.
+    await page.locator("#note-input").fill("");
+    await expect(page.locator("#status")).toHaveText("빈 글은 저장되지 않습니다");
+    await expect(page.locator("#btn-copy")).toBeDisabled();
+    await page.waitForTimeout(1200);
+    expect(await dbGet(`users/${uid}/notes/${id}/text`)).toBe("고친 글\n둘째 줄");
+    await page.locator("#note-input").fill("고친 글\n둘째 줄");
+    await expect(page.locator("#btn-copy")).toBeEnabled();
+  });
+
+  test("+ 새 글: 적으면 새 글로 저장되고 곧바로 위젯에 고정된다", async () => {
+    await page.locator("#btn-new").click();
+    await expect(page.locator("#note-input")).toHaveValue("");
+    await expect(page.locator("#note-input")).toBeFocused();
+    await page.locator("#note-input").fill("새로 쓴 글");
+    await expect.poll(pinnedText).toBe("새로 쓴 글");
+    expect(Object.keys(await dbGet(`users/${uid}/notes`))).toHaveLength(4);
+
+    // 이어서 고치면 같은 글이 고쳐집니다. (글이 또 생기지 않음)
+    await page.locator("#note-input").fill("새로 쓴 글 (고침)");
+    await expect.poll(pinnedText).toBe("새로 쓴 글 (고침)");
+    expect(Object.keys(await dbGet(`users/${uid}/notes`))).toHaveLength(4);
+  });
+
+  test("접기: 윗줄만 남고 첫 줄이 보이며, 다시 켜도 접힌 채로 뜬다", async () => {
+    const full = (await bounds(app)).height;
+    await page.locator("#btn-collapse").click();
+    await expect.poll(async () => (await bounds(app)).height).toBe(50);
+    await expect(page.locator("#note-input")).toBeHidden();
+    await expect(page.locator("#peek")).toHaveText("새로 쓴 글 (고침)");
+    await expect(page.locator("#btn-collapse")).toHaveAttribute("aria-expanded", "false");
+
+    await app.close();
+    ({ app, page } = await launch());
+    await expect.poll(async () => (await bounds(app)).height).toBe(50);
+    await expect(page.locator("html")).toHaveClass(/is-collapsed/);
+
+    await page.locator("#btn-collapse").click();
+    await expect.poll(async () => (await bounds(app)).height).toBe(full);
+    await expect(page.locator("#note-input")).toBeVisible();
+    await expect(page.locator("#note-input")).toHaveValue("새로 쓴 글 (고침)");
   });
 
   test("껐다 켜기: 숨기기 버튼, 트레이, 명령줄(--toggle) 모두 동작한다", async () => {
@@ -307,7 +367,7 @@ test.describe.serial("데스크톱 위젯", () => {
     ({ app, page } = await launch(["--autostart"]));
     await expect.poll(() => isVisible(app)).toBe(true);
     expect(await bounds(app)).toMatchObject({ x: 120, y: 140 });
-    await expect(page.locator("#note-text")).toHaveText("첫 번째 글", { timeout: 15_000 });
+    await expect(page.locator("#note-input")).toHaveValue("새로 쓴 글 (고침)", { timeout: 15_000 });
 
     // 꺼 둔 채로 재시작하면 트레이에만 조용히 떠 있습니다.
     await main(app, () => global.__postit.hideWidget());

@@ -6,6 +6,7 @@ const path = require("node:path");
 const DEFAULTS = {
   visible: true,       // 위젯이 켜져 있는지
   alwaysOnTop: true,   // 다른 창 위에 떠 있는지
+  collapsed: false,    // 윗줄만 남기고 접어 두었는지
   x: undefined,        // 마지막 위치
   y: undefined,
   autostart: undefined // 처음 실행 때 한 번 켜고, 이후로는 사용자가 고른 값

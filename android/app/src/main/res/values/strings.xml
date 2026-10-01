@@ -28,7 +28,7 @@
     <string name="save_edit">수정 저장</string>
     <string name="cancel_edit">수정 취소</string>
     <string name="list_title">저장한 글</string>
-    <string name="list_hint">고정한 글 하나가 홈 화면 위젯에 표시됩니다.
+    <string name="list_hint">고정한 글 하나가 홈 화면 위젯에 표시됩니다. 새로 저장한 글은 자동으로 고정됩니다.
 글을 길게 누르면 여러 개를 한 번에 지울 수 있습니다.</string>
     <string name="empty">아직 저장한 글이 없습니다.</string>
     <string name="char_count">%1$d자</string>
@@ -52,7 +52,7 @@
     <string name="deleted_many">%1$d개를 삭제했습니다.</string>
 
     <string name="copied">클립보드에 복사했습니다.</string>
-    <string name="saved">저장했습니다.</string>
+    <string name="saved">저장하고 위젯에 고정했습니다.</string>
     <string name="updated">수정했습니다.</string>
     <string name="deleted">삭제했습니다.</string>
     <string name="pinned_done">위젯에 고정했습니다.</string>
@@ -65,6 +65,8 @@
     <string name="delete_confirm_title">삭제할까요?</string>
     <string name="widget_refresh">새로 고침</string>
     <string name="widget_save_clip">클립보드 저장</string>
+    <string name="widget_open">열기</string>
+    <string name="copied_stale">인터넷에 연결하지 못해, 마지막으로 받아 둔 글을 복사했습니다.</string>
     <string name="widget_empty">웹에서 글을 고정하면 여기에 표시됩니다.</string>
     <string name="widget_signin">앱을 열어 로그인해 주세요.</string>
 

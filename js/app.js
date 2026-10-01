@@ -460,17 +460,19 @@ async function save() {
       toast("수정했습니다.");
       cancelEdit();
     } else {
-      const created = push(ref(db, "users/" + uid + "/notes"));
-      await set(created, {
-        text,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+      // 새 글은 곧바로 위젯에 고정합니다. 한 번의 쓰기로 묶어 고정만 빠지는 일이 없게 합니다.
+      const key = push(ref(db, "users/" + uid + "/notes")).key;
+      await update(ref(db, "users/" + uid), {
+        ["notes/" + key]: {
+          text,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        },
+        pinned: key
       });
-      // 첫 글이면 자동으로 위젯에 고정
-      if (!pinnedId) await set(ref(db, "users/" + uid + "/pinned"), created.key);
       input.value = "";
       updateCounter();
-      toast("저장했습니다.");
+      toast("저장하고 위젯에 고정했습니다.");
     }
   } catch (err) {
     console.error(err);

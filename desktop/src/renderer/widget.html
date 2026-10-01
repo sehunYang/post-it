@@ -10,8 +10,16 @@
 <body>
 <article id="card" class="card is-loading" aria-label="Post-it 위젯">
   <header class="bar">
+    <button id="btn-collapse" class="tool collapse" type="button" title="접기" aria-label="접기" aria-expanded="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
     <span class="brand"><i id="dot" class="dot" aria-hidden="true"></i>Post-it</span>
+    <!-- 접었을 때 고정한 글의 첫 줄 -->
+    <span id="peek" class="peek"></span>
     <div class="tools">
+      <button id="btn-new" class="tool" type="button" title="새 글 쓰기 (저장하면 위젯에 고정)" aria-label="새 글 쓰기" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
       <button id="btn-save-clip" class="tool" type="button" title="지금 클립보드를 새 글로 저장" aria-label="지금 클립보드를 새 글로 저장" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M8 5.5H6.5A1.5 1.5 0 0 0 5 7v12.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5H16"/><path d="M12 10.5v6M9 13.5h6"/></svg>
       </button>
@@ -30,13 +38,15 @@
     <button id="btn-signin" class="primary" type="button">Google 계정으로 로그인</button>
   </section>
 
-  <!-- 로그인 후 -->
-  <button id="note" class="note" type="button" hidden title="눌러서 클립보드로 복사">
-    <span id="note-text" class="note-text"></span>
-  </button>
+  <!-- 로그인 후: 고정한 글을 바로 고쳐 씁니다. 멈추면 저장됩니다. -->
+  <section id="editor" class="editor" hidden>
+    <textarea id="note-input" class="note-input" spellcheck="false" aria-label="고정한 글"
+      placeholder="여기에 적으면 저장되고 위젯에 고정됩니다."></textarea>
+  </section>
 
   <footer class="foot">
     <span id="status" class="status" role="status" aria-live="polite">불러오는 중…</span>
+    <button id="btn-copy" class="copy" type="button" title="클립보드로 복사" hidden>복사</button>
   </footer>
 </article>
 <script type="module" src="../../dist/widget.js"></script>

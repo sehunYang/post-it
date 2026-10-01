@@ -74,7 +74,9 @@ class ClipActivity : ComponentActivity() {
 
             WidgetState.Kind.OK -> {
                 clipboard().setPrimaryClip(ClipData.newPlainText(getString(R.string.app_name), state.text))
-                toastUnlessSystemShows(getString(R.string.copied))
+                // 최신 글을 받지 못했으면 시스템 알림과 상관없이 꼭 알려 줍니다.
+                if (state.stale) Toast.makeText(this, R.string.copied_stale, Toast.LENGTH_LONG).show()
+                else toastUnlessSystemShows(getString(R.string.copied))
             }
         }
         finish()

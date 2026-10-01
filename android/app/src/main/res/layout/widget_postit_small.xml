@@ -54,5 +54,20 @@
             android:src="@drawable/ic_refresh"
             android:background="@drawable/widget_body_ripple"
             android:contentDescription="@string/widget_refresh" />
+
+        <!-- 앱 열기 -->
+        <TextView
+            android:id="@+id/widget_open"
+            android:layout_width="wrap_content"
+            android:layout_height="26dp"
+            android:layout_marginStart="2dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:gravity="center"
+            android:background="@drawable/pill_outline"
+            android:text="@string/widget_open"
+            android:textColor="@color/accent"
+            android:textSize="11sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

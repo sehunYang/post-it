@@ -58,13 +58,35 @@
         android:ellipsize="end"
         android:gravity="top|start" />
 
-    <TextView
-        android:id="@+id/widget_footer"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:textColor="@color/muted"
-        android:textSize="10sp"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_footer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/muted"
+            android:textSize="10sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <!-- 앱 열기 -->
+        <TextView
+            android:id="@+id/widget_open"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:gravity="center"
+            android:background="@drawable/pill_outline"
+            android:text="@string/widget_open"
+            android:textColor="@color/accent"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 </LinearLayout>

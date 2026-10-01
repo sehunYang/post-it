@@ -23,7 +23,9 @@ else if (DEV) app.setPath("userData", app.getPath("userData") + "-dev");
 const LOGIN_ITEM_NAME = devEnv("POSTIT_LOGIN_ITEM_NAME") || (DEV ? "Post-it (dev)" : "Post-it");
 
 const WIDGET_WIDTH = 320;
-const WIDGET_HEIGHT = 176;
+const WIDGET_HEIGHT = 220;
+// 접었을 때: 윗줄(36) + 카드 테두리(2) + 창 안쪽 여백(12). widget.css 의 .bar 높이와 맞춥니다.
+const COLLAPSED_HEIGHT = 50;
 const HOVER_POLL_MS = 120;
 const WEB_APP_URL = "https://shy.ai.kr/post-it/";
 
@@ -81,6 +83,10 @@ function restoredPosition() {
   return visible ? { x, y } : defaultPosition();
 }
 
+function widgetHeight() {
+  return settings.get().collapsed ? COLLAPSED_HEIGHT : WIDGET_HEIGHT;
+}
+
 function alive() {
   return Boolean(win && !win.isDestroyed());
 }
@@ -90,7 +96,7 @@ function createWindow({ show = true } = {}) {
   win = new BrowserWindow({
     x, y,
     width: WIDGET_WIDTH,
-    height: WIDGET_HEIGHT,
+    height: widgetHeight(),
     frame: false,
     transparent: true,
     resizable: false,
@@ -197,8 +203,8 @@ function setHovered(next) {
 
 /* ---------- 트레이 ---------- */
 function trayImage() {
-  const img = nativeImage.createFromPath(path.join(__dirname, "..", "assets", "tray.png"));
-  return img.isEmpty() ? img : img.resize({ width: 16, height: 16, quality: "best" });
+  // tray.png(16px) 옆의 tray@1.5x.png · tray@2x.png 를 화면 배율에 맞춰 알아서 골라 씁니다.
+  return nativeImage.createFromPath(path.join(__dirname, "..", "assets", "tray.png"));
 }
 
 function buildTrayMenu() {
@@ -256,7 +262,8 @@ app.on("second-instance", (_e, argv) => handleCommand(argv));
 /* ---------- 렌더러와 주고받기 ---------- */
 ipcMain.handle("env:get", () => ({
   emulator: EMULATOR,
-  version: app.getVersion()
+  version: app.getVersion(),
+  collapsed: settings.get().collapsed
 }));
 
 ipcMain.handle("clipboard:write", (_e, text) => {
@@ -266,6 +273,12 @@ ipcMain.handle("clipboard:write", (_e, text) => {
 ipcMain.handle("clipboard:read", () => clipboard.readText());
 
 ipcMain.handle("widget:hide", () => hideWidget());
+// 접으면 창을 윗줄 높이로 줄입니다. 위쪽 모서리는 그대로라 아래로만 접히고 펼쳐집니다.
+ipcMain.handle("widget:set-collapsed", (_e, collapsed) => {
+  settings.set({ collapsed: Boolean(collapsed) });
+  if (alive()) win.setBounds({ ...win.getBounds(), width: WIDGET_WIDTH, height: widgetHeight() });
+  return settings.get().collapsed;
+});
 ipcMain.handle("app:open-web", () => shell.openExternal(WEB_APP_URL));
 
 // Google 로그인은 위젯 안에서 할 수 없습니다(Google 이 내장 브라우저를 막습니다).

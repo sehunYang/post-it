@@ -72,6 +72,8 @@ open class PostItWidget : AppWidgetProvider() {
                 activityIntent(context, ClipActivity.ACTION_SAVE_CLIPBOARD, 2)
             )
             views.setOnClickPendingIntent(R.id.widget_refresh, refreshIntent(context))
+            // 열기 → Post-it 앱
+            views.setOnClickPendingIntent(R.id.widget_open, openAppIntent(context))
 
             return views
         }
@@ -83,6 +85,18 @@ open class PostItWidget : AppWidgetProvider() {
             }
             return PendingIntent.getActivity(
                 context, requestCode, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+
+        private fun openAppIntent(context: Context): PendingIntent {
+            val intent = Intent(context, MainActivity::class.java).apply {
+                action = Intent.ACTION_MAIN
+                addCategory(Intent.CATEGORY_LAUNCHER)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            return PendingIntent.getActivity(
+                context, 4, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         }

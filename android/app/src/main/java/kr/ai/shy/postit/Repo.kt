@@ -2,10 +2,18 @@ package kr.ai.shy.postit
 
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
+import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
+import java.io.IOException
 
 /** 저장된 글 하나. 웹앱의 users/{uid}/notes/{id} 와 같은 모양입니다. */
 data class Note(
@@ -15,11 +23,15 @@ data class Note(
     val updatedAt: Long
 )
 
-/** 위젯이 그려야 할 상태. 네트워크가 없으면 마지막으로 받아 둔 값을 씁니다. */
+/**
+ * 위젯이 그려야 할 상태. 네트워크가 없으면 마지막으로 받아 둔 값을 씁니다.
+ * [stale] 은 서버에서 받지 못하고 캐시로 대신했다는 뜻이며, 저장하지 않습니다.
+ */
 data class WidgetState(
     val kind: Kind,
     val text: String = "",
-    val syncedAt: Long = 0L
+    val syncedAt: Long = 0L,
+    val stale: Boolean = false
 ) {
     enum class Kind { SIGNED_OUT, NOTHING_PINNED, OK }
 }
@@ -30,6 +42,9 @@ object Repo {
     private const val KEY_KIND = "kind"
     private const val KEY_TEXT = "text"
     private const val KEY_SYNCED_AT = "syncedAt"
+
+    /** 위젯을 눌러 앱이 새로 뜰 때 서버 연결을 기다리는 최대 시간 */
+    private const val CONNECT_TIMEOUT_MS = 10_000L
 
     /* ---------- Firebase ---------- */
 
@@ -46,22 +61,23 @@ object Repo {
 
     fun rootRef(uid: String): DatabaseReference = userRef(uid)
 
-    /** 새 글을 저장하고 그 id 를 돌려줍니다. 고정된 글이 없으면 자동으로 고정합니다. */
+    /**
+     * 새 글을 저장하고 그 id 를 돌려줍니다. 새 글은 곧바로 위젯에 고정됩니다.
+     * 한 번의 쓰기로 묶어 글만 저장되고 고정이 빠지는 일이 없게 합니다.
+     */
     suspend fun addNote(uid: String, text: String): String {
-        val ref = notesRef(uid).push()
-        ref.setValue(
+        val id = notesRef(uid).push().key!!
+        rootRef(uid).updateChildren(
             mapOf(
-                "text" to text,
-                "createdAt" to ServerValue.TIMESTAMP,
-                "updatedAt" to ServerValue.TIMESTAMP
+                "notes/$id" to mapOf(
+                    "text" to text,
+                    "createdAt" to ServerValue.TIMESTAMP,
+                    "updatedAt" to ServerValue.TIMESTAMP
+                ),
+                "pinned" to id
             )
         ).await()
-
-        val pinned = pinnedRef(uid).get().await().getValue(String::class.java)
-        if (pinned.isNullOrEmpty()) {
-            pinnedRef(uid).setValue(ref.key).await()
-        }
-        return ref.key!!
+        return id
     }
 
     suspend fun updateNote(uid: String, id: String, text: String) {
@@ -95,9 +111,37 @@ object Repo {
         pinnedRef(uid).setValue(id).await()
     }
 
+    /**
+     * 서버와 실제로 연결될 때까지 기다립니다.
+     *
+     * 위젯을 눌러 앱 프로세스가 새로 뜨면 연결에 몇 초가 걸리는데, 그 전에 부른 get() 은
+     * 약 3초 만에 "Client is offline" 으로 실패합니다. 그러면 예전 캐시가 복사되므로,
+     * 연결을 먼저 확인한 뒤에 읽습니다.
+     */
+    private suspend fun awaitConnected(): Boolean {
+        val db = FirebaseDatabase.getInstance()
+        db.goOnline()
+        val ref = db.getReference(".info/connected")
+        val connected = callbackFlow {
+            val listener = object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    trySend(snapshot.getValue(Boolean::class.java) == true)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    close(error.toException())
+                }
+            }
+            ref.addValueEventListener(listener)
+            awaitClose { ref.removeEventListener(listener) }
+        }
+        return withTimeoutOrNull(CONNECT_TIMEOUT_MS) { connected.first { it } } == true
+    }
+
     /** 위젯이 표시하거나 복사할 최신 텍스트를 서버에서 한 번 읽어 옵니다. */
     suspend fun fetchWidgetState(): WidgetState {
         val uid = uid() ?: return WidgetState(WidgetState.Kind.SIGNED_OUT)
+        if (!awaitConnected()) throw IOException("서버에 연결하지 못했습니다.")
 
         val pinnedId = pinnedRef(uid).get().await().getValue(String::class.java)
         if (pinnedId.isNullOrEmpty()) return WidgetState(WidgetState.Kind.NOTHING_PINNED)
@@ -143,7 +187,7 @@ object Repo {
             writeCache(context, fresh)
             fresh
         } catch (t: Throwable) {
-            readCache(context)
+            readCache(context).copy(stale = true)
         }
     }
 }

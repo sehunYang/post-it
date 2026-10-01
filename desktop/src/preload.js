@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("postit", {
   copy: (text) => ipcRenderer.invoke("clipboard:write", text),
   readClipboard: () => ipcRenderer.invoke("clipboard:read"),
   hide: () => ipcRenderer.invoke("widget:hide"),
+  setCollapsed: (collapsed) => ipcRenderer.invoke("widget:set-collapsed", collapsed),
   openWeb: () => ipcRenderer.invoke("app:open-web"),
   startLogin: () => ipcRenderer.invoke("auth:start"),
   onHover: on("widget:hover"),
