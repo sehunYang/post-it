@@ -13,6 +13,7 @@ import android.view.View
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
@@ -28,6 +29,8 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.storage.StorageException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kr.ai.shy.postit.databinding.ActivityMainBinding
@@ -49,6 +52,11 @@ class MainActivity : AppCompatActivity() {
     private var listeningUid: String? = null
 
     private val authListener = FirebaseAuth.AuthStateListener { onAuthChanged() }
+
+    /** "사진·파일 첨부" — 시스템 파일 선택기에서 여러 개를 고릅니다. */
+    private val pickFiles = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) uploadFiles(uris)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -251,15 +259,8 @@ class MainActivity : AppCompatActivity() {
         val l = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 pinnedId = snapshot.child("pinned").getValue(String::class.java)
-                notes = snapshot.child("notes").children.mapNotNull { child ->
-                    val id = child.key ?: return@mapNotNull null
-                    Note(
-                        id = id,
-                        text = child.child("text").getValue(String::class.java).orEmpty(),
-                        createdAt = child.child("createdAt").getValue(Long::class.java) ?: 0L,
-                        updatedAt = child.child("updatedAt").getValue(Long::class.java) ?: 0L
-                    )
-                }.sortedByDescending { if (it.updatedAt > 0) it.updatedAt else it.createdAt }
+                notes = snapshot.child("notes").children.mapNotNull(Repo::parseNote)
+                    .sortedByDescending { if (it.updatedAt > 0) it.updatedAt else it.createdAt }
 
                 render()
                 syncWidget()
@@ -376,6 +377,7 @@ class MainActivity : AppCompatActivity() {
         val uid = Repo.uid() ?: return
         val ids = selectedIds.toList()
         if (ids.isEmpty()) return
+        val targets = notes.filter { it.id in selectedIds }
 
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.delete_many_title, ids.size))
@@ -384,7 +386,7 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.action_delete) { _, _ ->
                 binding.btnDeleteSelected.isEnabled = false
                 lifecycleScope.launch {
-                    runCatching { Repo.deleteNotes(uid, ids) }
+                    runCatching { Repo.deleteNotes(applicationContext, uid, targets) }
                         .onSuccess {
                             exitSelection()
                             Toast.makeText(
@@ -413,6 +415,32 @@ class MainActivity : AppCompatActivity() {
         binding.input.doAfterTextChanged { updateCounter() }
         binding.btnSave.setOnClickListener { save() }
         binding.btnCancelEdit.setOnClickListener { cancelEdit() }
+        binding.btnAttach.setOnClickListener { pickFiles.launch(arrayOf("*/*")) }
+    }
+
+    /** 고른 파일들을 하나의 파일 글로 올립니다. 올리는 동안 버튼에 진행 상황을 보여 줍니다. */
+    private fun uploadFiles(uris: List<Uri>) {
+        val uid = Repo.uid() ?: return
+        binding.btnAttach.isEnabled = false
+        binding.btnAttach.setText(R.string.uploading)
+        lifecycleScope.launch {
+            try {
+                Repo.addFileNote(applicationContext, uid, uris) { done, total ->
+                    binding.btnAttach.text = getString(R.string.uploading_progress, done, total)
+                }
+                toast(R.string.saved)
+            } catch (t: Throwable) {
+                val message = if (t is StorageException && t.errorCode == StorageException.ERROR_NOT_AUTHORIZED) {
+                    getString(R.string.files_denied)
+                } else {
+                    t.localizedMessage ?: "저장에 실패했습니다."
+                }
+                Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+            } finally {
+                binding.btnAttach.isEnabled = true
+                binding.btnAttach.setText(R.string.attach)
+            }
+        }
     }
 
     private fun updateCounter() {
@@ -467,9 +495,49 @@ class MainActivity : AppCompatActivity() {
     /* ---------- 항목 동작 ---------- */
 
     private fun copyToClipboard(note: Note) {
+        if (note.isFileNote) {
+            withFiles(note) { uris ->
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(NoteFiles.clipOf(this, getString(R.string.app_name), uris))
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) toast(R.string.copied)
+            }
+            return
+        }
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         cm.setPrimaryClip(ClipData.newPlainText(getString(R.string.app_name), note.text))
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) toast(R.string.copied)
+    }
+
+    /** 파일 글을 다른 앱으로 보냅니다(하나면 SEND, 여럿이면 SEND_MULTIPLE). */
+    private fun shareFiles(note: Note) {
+        withFiles(note) { uris ->
+            val send = NoteFiles.shareIntent(this, getString(R.string.app_name), note.files, uris)
+            runCatching { startActivity(Intent.createChooser(send, getString(R.string.share_files_title))) }
+        }
+    }
+
+    /**
+     * 파일 글의 파일들을 기기에 받아 두고(이미 있으면 그대로) content:// 주소로 [block] 을 부릅니다.
+     * 오래 걸리면 "받는 중…" 을 띄우고, 받지 못하면 전에 받아 둔 파일이라도 씁니다.
+     */
+    private fun withFiles(note: Note, block: (List<Uri>) -> Unit) {
+        lifecycleScope.launch {
+            val slow = launch {
+                delay(700)
+                toast(R.string.downloading)
+            }
+            val locals = try {
+                runCatching { NoteFiles.download(applicationContext, note.id, note.files) }.getOrNull()
+                    ?: NoteFiles.cached(applicationContext, note.id, note.files)
+            } finally {
+                slow.cancel()
+            }
+            if (locals == null) {
+                Toast.makeText(this@MainActivity, R.string.files_download_failed, Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            block(NoteFiles.contentUris(applicationContext, locals))
+        }
     }
 
     private fun togglePin(note: Note, pinned: Boolean) {
@@ -485,12 +553,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun showMore(anchor: View, note: Note) {
         PopupMenu(this, anchor).apply {
-            menu.add(0, 1, 0, R.string.action_edit)
+            // 파일 글은 고쳐 쓰지 않습니다(docs/FILES.md). 대신 다른 앱으로 보내는 "공유" 를 둡니다.
+            if (note.isFileNote) menu.add(0, 3, 0, R.string.action_share)
+            else menu.add(0, 1, 0, R.string.action_edit)
             menu.add(0, 2, 1, R.string.action_delete)
             setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     1 -> { startEdit(note); true }
                     2 -> { confirmDelete(note); true }
+                    3 -> { shareFiles(note); true }
                     else -> false
                 }
             }
@@ -507,7 +578,7 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.action_delete) { _, _ ->
                 val uid = Repo.uid() ?: return@setPositiveButton
                 lifecycleScope.launch {
-                    runCatching { Repo.deleteNote(uid, note.id) }
+                    runCatching { Repo.deleteNote(applicationContext, uid, note) }
                         .onSuccess {
                             if (editingId == note.id) cancelEdit()
                             toast(R.string.deleted)

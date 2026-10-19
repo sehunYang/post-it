@@ -88,6 +88,16 @@ h2{font-size:clamp(1.6rem,3vw,2.4rem);margin:.4rem 0 .5rem}
 .composer-bar{display:flex;align-items:center;gap:1rem;margin-top:.9rem}
 .composer-bar .sim-actions{margin-left:auto}
 #counter{font-size:.88rem}
+.composer.is-dragover{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent-soft) 45%,var(--surface))}
+.composer.is-busy textarea{opacity:.6}
+
+/* 사진·파일 글 */
+.attachment{display:flex;align-items:flex-start;gap:1rem}
+.attachment-thumb{display:block;max-width:160px;max-height:120px;border:1px solid var(--line);border-radius:10px;object-fit:cover;background:var(--bg)}
+.attachment-files{list-style:none;margin:0;padding:0;min-width:0;display:grid;gap:.2rem}
+.attachment-files li{display:flex;gap:.6rem;align-items:baseline;min-width:0}
+.attachment-files .muted{font-size:.82rem;flex:0 0 auto}
+.attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:1rem}
 
 .list-head{margin:3rem 0 1rem}
 .accordion-hint{color:var(--muted);font-size:.95rem;margin:0}
@@ -142,6 +152,7 @@ footer a{text-decoration:none}
   .desk-body{grid-template-columns:1fr;padding:0 1rem 1rem}
   .phone-steps{justify-self:stretch}
   .composer-bar{flex-wrap:wrap}
+  .attachment{flex-direction:column}
   .account{border-radius:18px}
   .toast{width:max-content;text-align:center}
   footer{flex-direction:column;gap:.35rem}

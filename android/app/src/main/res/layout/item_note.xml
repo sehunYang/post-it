@@ -41,6 +41,37 @@
             android:maxLines="8"
             android:textColor="@color/text"
             android:textSize="16sp" />
+
+        <!-- 사진·파일 글: 미리보기(있으면) + 파일 이름과 크기 -->
+        <LinearLayout
+            android:id="@+id/file_box"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/note_thumb"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/widget_thumb_bg"
+                android:contentDescription="@string/thumb_description"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/note_files"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:lineSpacingMultiplier="1.35"
+                android:maxLines="10"
+                android:textColor="@color/text"
+                android:textSize="15sp" />
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout

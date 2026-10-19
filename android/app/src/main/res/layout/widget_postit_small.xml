@@ -1,11 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 2x2 정사각 위젯. 좁은 만큼 eyebrow 를 빼고 본문에 자리를 몰아줍니다. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/widget_bg"
     android:padding="12dp">
+
+    <!-- 사진 글이면 위쪽 절반에 미리보기를 보여 줍니다(평소에는 숨김). -->
+    <ImageView
+        android:id="@+id/widget_thumb"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="6dp"
+        android:background="@drawable/widget_thumb_bg"
+        android:clipToOutline="true"
+        tools:targetApi="31"
+        android:contentDescription="@string/thumb_description"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/widget_text"

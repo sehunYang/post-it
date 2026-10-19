@@ -1,6 +1,6 @@
 // Post-it 데스크톱 위젯 E2E
 //
-// 실제 Electron 앱을 띄우고 Firebase 에뮬레이터(auth 9099, database 9000)에 붙여서
+// 실제 Electron 앱을 띄우고 Firebase 에뮬레이터(auth 9099, database 9000, storage 9199)에 붙여서
 // 사용자가 하는 그대로 확인합니다. 커서는 진짜 OS 커서를 움직입니다.
 const { test, expect, _electron: electron, chromium } = require("@playwright/test");
 const { execFileSync, spawn } = require("node:child_process");
@@ -13,6 +13,7 @@ const PROJECT = "demo-postit";
 const DB = "http://127.0.0.1:9000";
 const NS = `${PROJECT}-default-rtdb`;
 const AUTH = "http://127.0.0.1:9099";
+const STORAGE = "http://127.0.0.1:9199/v0/b/demo-postit.appspot.com/o";
 const OWNER = { Authorization: "Bearer owner" }; // 에뮬레이터 관리자 권한
 const LOGIN_ITEM = `PostIt-E2E-${process.pid}`;
 const RUN_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -55,6 +56,43 @@ async function onlyUser() {
   const { userInfo = [] } = await r.json();
   expect(userInfo).toHaveLength(1);
   return userInfo[0];
+}
+
+/* Storage 에뮬레이터: 관리자 권한으로 파일을 넣고, 보고, 지웁니다. */
+const objectUrl = (p) => `${STORAGE}/${encodeURIComponent(p)}`;
+async function storagePut(p, data, type) {
+  const r = await fetch(`${STORAGE}?uploadType=media&name=${encodeURIComponent(p)}`, {
+    method: "POST", headers: { ...OWNER, "Content-Type": type }, body: data
+  });
+  expect(r.ok).toBeTruthy();
+}
+async function storageGet(p) {
+  const r = await fetch(`${objectUrl(p)}?alt=media`, { headers: OWNER });
+  return r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+}
+
+/** 지금 Windows 클립보드의 파일 목록 (탐색기에 붙여넣으면 나올 파일들) */
+function clipboardFileList() {
+  const script = "[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false\n" +
+    "Get-Clipboard -Format FileDropList | ForEach-Object { $_.FullName }";
+  const out = execFileSync("powershell.exe",
+    ["-NoProfile", "-NonInteractive", "-Sta", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")],
+    { encoding: "utf8" });
+  return out.split(/\r?\n/).filter(Boolean);
+}
+
+/** 단색 PNG 와 그 미리보기(thumb)를 앱의 nativeImage 로 만듭니다. */
+async function makePng(app, width, height) {
+  const { png, thumb } = await main(app, ({ nativeImage }, { width, height }) => {
+    const bmp = Buffer.alloc(width * height * 4);
+    for (let i = 0; i < bmp.length; i += 4) bmp.set([200, 120, 40, 255], i);
+    const img = nativeImage.createFromBitmap(bmp, { width, height });
+    return {
+      png: img.toPNG().toString("base64"),
+      thumb: "data:image/jpeg;base64," + img.resize({ width: 320 }).toJPEG(70).toString("base64")
+    };
+  }, { width, height });
+  return { png: Buffer.from(png, "base64"), thumb };
 }
 
 /* 진짜 OS 커서를 옮기는 PowerShell 하나를 띄워 두고 재사용합니다. (Add-Type 컴파일이 느려서) */
@@ -391,6 +429,103 @@ test.describe.serial("데스크톱 위젯", () => {
 
     await main(app, () => global.__postit.setAutostart(true));
     expect(regQuery(LOGIN_ITEM)).toContain("--autostart");
+  });
+
+  /* ---------- 사진·파일 (docs/FILES.md) ---------- */
+  test("파일 글: 입력란 대신 미리보기와 파일 이름·크기가 뜨고, 고쳐 쓸 수 없다", async () => {
+    const { png, thumb } = await makePng(app, 640, 480);
+    const txt = Buffer.from("보고서 내용입니다\n", "utf8");
+    const files = [
+      { path: `users/${uid}/nfile/0/사진.png`, name: "사진.png", type: "image/png", size: png.length },
+      { path: `users/${uid}/nfile/1/보고서 초안.txt`, name: "보고서 초안.txt", type: "text/plain", size: txt.length }
+    ];
+    await storagePut(files[0].path, png, "image/png");
+    await storagePut(files[1].path, txt, "text/plain");
+    const now = Date.now();
+    await dbPut(`users/${uid}/notes/nfile`, { text: "사진.png, 보고서 초안.txt", createdAt: now, updatedAt: now, files, thumb });
+    await dbPut(`users/${uid}/pinned`, "nfile");
+
+    await expect(page.locator("#attach")).toBeVisible();
+    await expect(page.locator("#note-input")).toBeHidden();
+    await expect(page.locator(".file-name")).toHaveText(["사진.png", "보고서 초안.txt"]);
+    await expect(page.locator(".file-size")).toHaveText([/KB$/, "26 B"]);
+    await expect(page.locator("#attach-thumb")).toBeVisible();
+    await expect(page.locator("#attach-thumb")).toHaveAttribute("src", thumb);
+    await expect(page.locator("#status")).toContainText("위젯에 고정됨 · 파일 2개");
+    await expect(page.locator("#btn-copy")).toBeEnabled();
+
+    // 타자를 쳐도 아무 글도 고쳐지지 않습니다.
+    await page.locator("#attach").click();
+    await page.keyboard.type("고치기");
+    await page.waitForTimeout(1200);
+    expect(await dbGet(`users/${uid}/notes/nfile`)).toMatchObject({ text: "사진.png, 보고서 초안.txt", updatedAt: now });
+
+    // + 는 입력란으로 돌아가고, 아무것도 적지 않고 나가면 다시 파일 글
+    await page.locator("#btn-new").click();
+    await expect(page.locator("#note-input")).toBeVisible();
+    await expect(page.locator("#note-input")).toBeFocused();
+    await expect(page.locator("#note-input")).toHaveValue("");
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#attach")).toBeVisible();
+
+    // 접으면 파일 이름들
+    await page.locator("#btn-collapse").click();
+    await expect(page.locator("#peek")).toHaveText("사진.png, 보고서 초안.txt");
+    await page.locator("#btn-collapse").click();
+    await expect(page.locator("#attach")).toBeVisible();
+  });
+
+  test("파일 글의 복사: 사용자 폴더 received/ 에 받아 두고 파일 목록을 클립보드에 올린다", async () => {
+    await main(app, ({ clipboard }) => clipboard.writeText("이전 내용"));
+    await page.locator("#btn-copy").click();
+    await expect(page.locator("#status")).toHaveText("클립보드에 복사했습니다", { timeout: 20_000 });
+
+    const p0 = path.join(userData, "received", "nfile", "0", "사진.png");
+    const p1 = path.join(userData, "received", "nfile", "1", "보고서 초안.txt");
+    expect(fs.readFileSync(p0).equals(await storageGet(`users/${uid}/nfile/0/사진.png`))).toBe(true);
+    expect(fs.readFileSync(p1, "utf8")).toBe("보고서 내용입니다\n");
+    expect(clipboardFileList()).toEqual([p0, p1]);
+
+    // 이미 받은 파일은 다시 받지 않습니다. (서버에서 지워도 복사됨)
+    await fetch(objectUrl(`users/${uid}/nfile/1/보고서 초안.txt`), { method: "DELETE", headers: OWNER });
+    await main(app, ({ clipboard }) => clipboard.writeText("이전 내용"));
+    await page.locator("#btn-copy").click();
+    await expect(page.locator("#status")).toHaveText("클립보드에 복사했습니다", { timeout: 20_000 });
+    expect(clipboardFileList()).toEqual([p0, p1]);
+  });
+
+  test("클립보드 저장: 캡처한 그림을 Storage 에 올리고 files·thumb 가 있는 새 글로 고정한다", async () => {
+    test.setTimeout(90_000);
+    const { png } = await makePng(app, 1000, 500);
+    await main(app, async ({ clipboard, ClipboardItem }, b64) => {
+      const data = Buffer.from(b64, "base64");
+      await clipboard.write([new ClipboardItem({ "image/png": new Blob([data], { type: "image/png" }) })]);
+    }, png.toString("base64"));
+    await page.locator("#btn-save-clip").click();
+    await expect(page.locator("#status")).toHaveText("클립보드의 그림을 저장하고 고정했습니다", { timeout: 20_000 });
+
+    const id = await dbGet(`users/${uid}/pinned`);
+    expect(id).not.toBe("nfile");
+    const note = await dbGet(`users/${uid}/notes/${id}`);
+    expect(note.files).toHaveLength(1);
+    const [file] = note.files;
+    expect(file.name).toMatch(/^이미지-\d{8}-\d{6}\.png$/);
+    expect(file).toMatchObject({ path: `users/${uid}/${id}/0/${file.name}`, type: "image/png" });
+    expect(note.text).toBe(file.name);
+    expect(note.thumb).toMatch(/^data:image\/jpeg;base64,/);
+    expect(note.thumb.length).toBeLessThanOrEqual(60000);
+    const stored = await storageGet(file.path);
+    expect(stored && stored.length).toBe(file.size);
+
+    await expect(page.locator("#attach")).toBeVisible();
+    await expect(page.locator(".file-name")).toHaveText([file.name]);
+    await expect(page.locator("#attach-thumb")).toHaveAttribute("src", note.thumb);
+
+    // 그림 한 장 글을 복사하면 파일 목록과 그림이 함께 클립보드에 올라갑니다.
+    await page.locator("#btn-copy").click();
+    await expect(page.locator("#status")).toHaveText("클립보드에 복사했습니다", { timeout: 20_000 });
+    expect(clipboardFileList()).toEqual([path.join(userData, "received", id, "0", file.name)]);
+    expect(await main(app, ({ clipboard }) => clipboard.has("image/png"))).toBe(true);
   });
 
   test("트레이의 로그아웃", async () => {

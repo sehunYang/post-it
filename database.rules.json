@@ -8,6 +8,8 @@
   // 규칙 언어에는 자식 개수를 세는 기능이 없어서(numChildren 없음) 글 개수 제한은 걸지 않습니다.
   // 사용자가 늘어 한도가 걱정되면 Blaze 전환이나 DB 분리로 갑니다(.omc/plans/self-hosted-firebase.md).
   //
+  // 사진·파일은 Storage 에 두고 여기에는 이름·크기·미리보기만 둡니다(storage.rules, docs/FILES.md).
+  //
   // 규칙을 바꾸면 Firebase 콘솔 → Realtime Database → 규칙 에 붙여넣고 "게시" 해야 적용됩니다.
   "rules": {
     ".read": false,
@@ -33,6 +35,30 @@
             },
             "updatedAt": {
               ".validate": "newData.isNumber()"
+            },
+            // 사진·파일 글 (docs/FILES.md). 본체는 Storage 의 users/{uid}/{noteId}/ 아래에 있습니다.
+            "files": {
+              "$i": {
+                ".validate": "newData.hasChildren(['path', 'name', 'type', 'size'])",
+                "path": {
+                  ".validate": "newData.isString() && newData.val().beginsWith('users/' + $uid + '/' + $noteId + '/') && newData.val().length <= 600"
+                },
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 255"
+                },
+                "type": {
+                  ".validate": "newData.isString() && newData.val().length <= 255"
+                },
+                "size": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
+            "thumb": {
+              ".validate": "newData.isString() && newData.val().beginsWith('data:image/') && newData.val().length <= 60000"
             },
             "$other": {
               ".validate": false

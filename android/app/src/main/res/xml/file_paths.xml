@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider 가 내어 줄 수 있는 폴더. 받아 둔 파일(NoteFiles.download)만 엽니다. -->
+<paths>
+    <cache-path
+        name="received"
+        path="received/" />
+</paths>

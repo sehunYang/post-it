@@ -42,7 +42,7 @@
 
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Post-it","alternateName":"Post-it 클립보드","url":"https://shy.ai.kr/post-it/","description":"데스크톱에서 적어둔 글을 갤럭시 홈 화면 위젯 한 번으로 클립보드에 붙여넣고, 폰에서 적은 글도 데스크톱에 바로 나타나는 양방향 클립보드 웹앱.","applicationCategory":"ProductivityApplication","operatingSystem":"Web, Android","inLanguage":"ko","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"author":{"@type":"Person","name":"양세훈","url":"https://shy.ai.kr/"},"softwareHelp":"https://github.com/sehunYang/post-it"}</script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="css/main.css?v=7">
+<link rel="stylesheet" href="css/main.css?v=8">
 </head>
 <body>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -134,12 +134,14 @@
       </div>
     </details>
 
-    <div class="composer">
+    <div id="composer" class="composer">
       <label class="eyebrow" for="input">새로 적기</label>
-      <textarea id="input" rows="4" placeholder="옮기고 싶은 말을 여기에 적으세요.&#10;Ctrl + Enter 로 저장합니다."></textarea>
+      <textarea id="input" rows="4" placeholder="옮기고 싶은 말을 여기에 적으세요.&#10;Ctrl + Enter 로 저장합니다. 사진·파일은 Ctrl + V 로 붙여넣거나 여기로 끌어다 놓으세요."></textarea>
       <div class="composer-bar">
         <span id="counter" class="muted">0 / 5,000자</span>
         <div class="sim-actions">
+          <input id="file-input" type="file" multiple hidden>
+          <button id="btn-attach" class="ghost-button" type="button">사진·파일 첨부</button>
           <button id="btn-cancel-edit" class="ghost-button" type="button" hidden>수정 취소</button>
           <button id="btn-save" class="button" type="button">저장</button>
         </div>
@@ -149,6 +151,7 @@
     <div class="list-head">
       <h2>저장한 글</h2>
       <p class="accordion-hint">고정한 글 하나가 폰 위젯에 표시됩니다. 새로 저장한 글은 자동으로 고정됩니다.<br>
+        사진·파일도 같습니다. 폰 위젯이나 Windows 위젯에서 누르면 그대로 클립보드에 들어갑니다.<br>
         글을 클릭해 선택하고, <kbd>Ctrl</kbd>+클릭으로 추가, <kbd>Shift</kbd>+클릭으로 범위 선택해 한 번에 지울 수 있습니다.</p>
     </div>
 
@@ -175,6 +178,6 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
-<script type="module" src="js/app.js?v=7"></script>
+<script type="module" src="js/app.js?v=8"></script>
 </body>
 </html>

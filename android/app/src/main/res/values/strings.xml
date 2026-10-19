@@ -70,6 +70,29 @@
     <string name="widget_empty">웹에서 글을 고정하면 여기에 표시됩니다.</string>
     <string name="widget_signin">앱을 열어 로그인해 주세요.</string>
 
+    <!-- 사진·파일 공유 (docs/FILES.md) -->
+    <string name="attach">사진·파일 첨부</string>
+    <string name="uploading">올리는 중…</string>
+    <string name="uploading_progress">올리는 중… %1$d/%2$d</string>
+    <string name="downloading">받는 중…</string>
+    <string name="action_share">공유</string>
+    <string name="share_files_title">파일 공유</string>
+    <string name="files_none">올릴 파일이 없습니다.</string>
+    <string name="files_too_many">파일은 한 번에 %1$d개까지 올릴 수 있습니다.</string>
+    <string name="files_too_big">%1$s — 파일 하나는 %2$s까지 올릴 수 있습니다.</string>
+    <string name="files_limit" translatable="false">10MB</string>
+    <string name="files_limit_owner" translatable="false">100MB</string>
+    <string name="files_unreadable">%1$s 파일을 읽지 못했습니다.</string>
+    <string name="files_offline">인터넷에 연결하지 못했고, 이 기기에 받아 둔 파일도 없습니다.</string>
+    <string name="files_download_failed">파일을 받지 못했습니다.</string>
+    <string name="copied_files_stale">인터넷에 연결하지 못해, 전에 받아 둔 파일을 복사했습니다.</string>
+    <string name="files_image_one">🖼 %1$s</string>
+    <string name="files_file_one">📄 %1$s</string>
+    <string name="files_many">파일 %1$d개 · %2$s 외 %3$d개</string>
+    <string name="file_line">%1$s · %2$s</string>
+    <string name="files_denied">파일을 올리지 못했습니다. 파일 하나는 10MB까지 올릴 수 있습니다.</string>
+    <string name="thumb_description">첨부한 사진 미리보기</string>
+
     <!-- google-services.json 이 있으면 그 값이 우선 사용됩니다.
          없을 때만 아래 값을 씁니다(수동 설정용). -->
     <string name="web_client_id" translatable="false"></string>

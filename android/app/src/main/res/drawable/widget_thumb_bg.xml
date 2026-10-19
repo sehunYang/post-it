@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 위젯 미리보기 자리. Android 12 이상에서는 clipToOutline 으로 모서리가 둥글게 잘립니다. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/line" />
+    <corners android:radius="12dp" />
+</shape>

@@ -8,7 +8,9 @@ const EMULATOR_CONFIG = {
   apiKey: "demo-key",
   authDomain: "demo-postit.firebaseapp.com",
   projectId: "demo-postit",
-  databaseURL: "http://127.0.0.1:9000?ns=demo-postit-default-rtdb"
+  databaseURL: "http://127.0.0.1:9000?ns=demo-postit-default-rtdb",
+  // 파일은 메인 프로세스가 Storage 에뮬레이터(9199)에 올립니다(src/storage.js).
+  storageBucket: "demo-postit.appspot.com"
 };
 
 export function createApp(emulator) {

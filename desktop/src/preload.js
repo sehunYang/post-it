@@ -10,12 +10,18 @@ const on = (channel) => (callback) => {
 contextBridge.exposeInMainWorld("postit", {
   env: () => ipcRenderer.invoke("env:get"),
   copy: (text) => ipcRenderer.invoke("clipboard:write", text),
-  readClipboard: () => ipcRenderer.invoke("clipboard:read"),
+  // 클립보드 → 새 글. 파일·그림이면 올린 뒤 { kind: "files", files, thumb } 를 돌려줍니다.
+  saveClipboard: (req) => ipcRenderer.invoke("clip:save", req),
+  // 글 쓰기가 실패했을 때 방금 올린 파일 지우기
+  discardUploads: (req) => ipcRenderer.invoke("clip:discard", req),
+  // 파일 글 → 받아서 클립보드로
+  copyFiles: (req) => ipcRenderer.invoke("files:copy", req),
   hide: () => ipcRenderer.invoke("widget:hide"),
   setCollapsed: (collapsed) => ipcRenderer.invoke("widget:set-collapsed", collapsed),
   openWeb: () => ipcRenderer.invoke("app:open-web"),
   startLogin: () => ipcRenderer.invoke("auth:start"),
   onHover: on("widget:hover"),
+  onFileProgress: on("files:progress"),
   onCredential: on("auth:credential"),
   onSignOutRequest: on("auth:signout")
 });

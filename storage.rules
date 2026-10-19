@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// Post-it 파일 보안 규칙 (사진·파일 공유, docs/FILES.md)
+//
+// 로그인한 사람은 자기 UID 아래 파일만 읽고, 올리고, 지울 수 있습니다.
+// 파일 하나는 10MB, 소유자(아래 UID)는 100MB 까지. 덮어쓰기는 막습니다(새 글은 늘 새 경로).
+//
+// 규칙을 바꾸면 Firebase 콘솔 → Storage → 규칙 에 붙여넣고 "게시" 해야 적용됩니다.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /users/{uid}/{noteId}/{index}/{name} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      function maxBytes() {
+        return uid == 'PKfixfmWHlVOfBMPPvaileeINRC3' ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+      }
+
+      allow read, delete: if isOwner();
+      // resource == null: 이미 있는 경로에는 쓸 수 없습니다(create 만으로는 에뮬레이터가 덮어쓰기를 허용합니다).
+      allow create: if isOwner()
+        && resource == null
+        && request.resource.size <= maxBytes()
+        && index.matches('[0-9]');
+    }
+  }
+}
