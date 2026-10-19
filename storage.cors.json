@@ -1,0 +1,7 @@
+[
+  {
+    "origin": ["https://shy.ai.kr", "http://localhost:5000", "http://127.0.0.1:5000"],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]

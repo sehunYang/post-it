@@ -1,5 +1,8 @@
 package kr.ai.shy.postit
 
+import android.graphics.Bitmap
+import android.text.format.Formatter
+import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -34,6 +37,10 @@ class NoteAdapter(
             override fun areContentsTheSame(a: NoteRow, b: NoteRow) = a == b
         }
 
+        /** 미리보기 디코딩 결과. 파일 글은 고쳐 쓰지 않으므로 글 id 로 충분합니다. */
+        private val thumbs = LruCache<String, Bitmap>(40)
+        private const val THUMB_PX = 192
+
         private val timeFormat = SimpleDateFormat("a h:mm", Locale.KOREA)
         private val dateFormat = SimpleDateFormat("M월 d일 a h:mm", Locale.KOREA)
 
@@ -59,7 +66,7 @@ class NoteAdapter(
         val row = getItem(position)
         val b = holder.binding
 
-        b.noteText.text = row.note.text
+        bindContent(b, row.note)
         b.noteTime.text = formatTime(if (row.note.updatedAt > 0) row.note.updatedAt else row.note.createdAt)
 
         if (row.selectionMode) {
@@ -93,5 +100,32 @@ class NoteAdapter(
             b.card.isClickable = false
             b.card.setOnLongClickListener { onLongPress(row.note); true }
         }
+    }
+
+    /** 텍스트 글은 본문을, 사진·파일 글은 미리보기와 "이름 · 크기" 목록을 보여 줍니다. */
+    private fun bindContent(b: ItemNoteBinding, note: Note) {
+        if (!note.isFileNote) {
+            b.noteText.visibility = View.VISIBLE
+            b.fileBox.visibility = View.GONE
+            b.noteText.text = note.text
+            return
+        }
+
+        b.noteText.visibility = View.GONE
+        b.fileBox.visibility = View.VISIBLE
+
+        val context = b.root.context
+        b.noteFiles.text = note.files.joinToString("\n") { f ->
+            val name = if (f.isImage) context.getString(R.string.files_image_one, f.name)
+            else context.getString(R.string.files_file_one, f.name)
+            context.getString(R.string.file_line, name, Formatter.formatShortFileSize(context, f.size))
+        }
+
+        val bitmap = note.thumb?.let { thumb ->
+            thumbs.get(note.id) ?: NoteFiles.decodeThumb(thumb, THUMB_PX)?.also { thumbs.put(note.id, it) }
+        }
+        b.noteThumb.clipToOutline = true
+        b.noteThumb.setImageBitmap(bitmap)
+        b.noteThumb.visibility = if (bitmap != null) View.VISIBLE else View.GONE
     }
 }

@@ -6,6 +6,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.view.View
 import android.widget.RemoteViews
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -23,6 +25,20 @@ open class PostItWidget : AppWidgetProvider() {
     companion object {
         const val ACTION_REFRESH = "kr.ai.shy.postit.ACTION_REFRESH"
         private const val SYNC_WORK = "postit.widget.sync"
+
+        /** 위젯 미리보기 긴 변(px). RemoteViews 는 비트맵을 통째로 넘기므로 작게 보냅니다. */
+        private const val THUMB_PX = 160
+
+        /** 같은 미리보기를 그릴 때마다 base64 를 다시 풀지 않도록 마지막 하나만 들고 있습니다. */
+        private var thumbCache: Pair<String, Bitmap>? = null
+
+        private fun thumbBitmap(thumb: String?): Bitmap? {
+            if (thumb.isNullOrEmpty()) return null
+            thumbCache?.let { (key, bitmap) -> if (key == thumb) return bitmap }
+            val bitmap = NoteFiles.decodeThumb(thumb, THUMB_PX) ?: return null
+            thumbCache = thumb to bitmap
+            return bitmap
+        }
 
         /** 화면에 올라올 수 있는 모든 위젯 종류와 각자의 레이아웃. */
         private val PROVIDERS: List<Pair<Class<out PostItWidget>, Int>> = listOf(
@@ -45,6 +61,7 @@ open class PostItWidget : AppWidgetProvider() {
 
         private fun buildViews(context: Context, layout: Int, state: WidgetState): RemoteViews {
             val views = RemoteViews(context.packageName, layout)
+            views.setViewVisibility(R.id.widget_thumb, View.GONE)
 
             when (state.kind) {
                 WidgetState.Kind.SIGNED_OUT -> {
@@ -56,16 +73,21 @@ open class PostItWidget : AppWidgetProvider() {
                     views.setTextViewText(R.id.widget_footer, "")
                 }
                 WidgetState.Kind.OK -> {
-                    views.setTextViewText(R.id.widget_text, state.text)
+                    // 사진·파일 글은 이름 요약을, 첫 이미지가 있으면 미리보기도 함께 보여 줍니다.
+                    val text = if (state.files.isNotEmpty()) NoteFiles.summary(context, state.files) else state.text
+                    views.setTextViewText(R.id.widget_text, text)
                     views.setTextViewText(R.id.widget_footer, relativeTime(state.syncedAt))
+                    thumbBitmap(state.thumb)?.let {
+                        views.setImageViewBitmap(R.id.widget_thumb, it)
+                        views.setViewVisibility(R.id.widget_thumb, View.VISIBLE)
+                    }
                 }
             }
 
             // 본문을 누르면 → 최신 내용을 받아 클립보드로 복사
-            views.setOnClickPendingIntent(
-                R.id.widget_text,
-                activityIntent(context, ClipActivity.ACTION_COPY, 1)
-            )
+            val copy = activityIntent(context, ClipActivity.ACTION_COPY, 1)
+            views.setOnClickPendingIntent(R.id.widget_text, copy)
+            views.setOnClickPendingIntent(R.id.widget_thumb, copy)
             // 클립보드 아이콘을 누르면 → 지금 클립보드 내용을 새 글로 저장 (폰 → 데스크톱)
             views.setOnClickPendingIntent(
                 R.id.widget_save_clip,

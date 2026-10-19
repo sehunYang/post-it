@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 다른 앱에서 "공유 → Post-it" 으로 바로 저장 (폰 → 데스크톱) -->
+        <!-- 다른 앱에서 "공유 → Post-it" 으로 바로 저장 (폰 → 데스크톱). 글, 사진·파일 모두 받습니다. -->
         <activity
             android:name=".ShareActivity"
             android:exported="true"
@@ -36,6 +36,16 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
 
@@ -51,6 +61,20 @@
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@style/Theme.PostIt.Invisible" />
+
+        <!--
+          받아 둔 파일(cacheDir/received)을 content:// 주소로 내어 줍니다.
+          클립보드·공유로 넘기면 붙여넣거나 받는 앱에 읽기 권한이 따라갑니다.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <receiver
             android:name=".PostItWidget"

@@ -49,9 +49,10 @@ html.is-collapsed .collapse svg{transform:rotate(-90deg)}
 html.is-collapsed .peek{display:block}
 html.is-collapsed .pane,
 html.is-collapsed .editor,
+html.is-collapsed .attach,
 html.is-collapsed .foot{display:none!important}
 
-.pane,.editor{flex:1;min-height:0;margin:0 .5rem;-webkit-app-region:no-drag}
+.pane,.editor,.attach{flex:1;min-height:0;margin:0 .5rem;-webkit-app-region:no-drag}
 .pane{display:flex;flex-direction:column;justify-content:center;gap:.6rem;padding:0 .35rem}
 .hint{margin:0;color:var(--muted);font-size:.85rem}
 .primary{align-self:flex-start;padding:.45rem .95rem;border:0;border-radius:999px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
@@ -68,6 +69,17 @@ html.is-collapsed .foot{display:none!important}
 .note-input:hover{border-color:var(--line);background:var(--bg)}
 .note-input:focus{border-color:var(--accent);background:var(--surface)}
 .note-input::placeholder{color:var(--muted);font-size:.85rem}
+
+/* 사진·파일 글: 왼쪽에 미리보기, 오른쪽에 파일 이름과 크기. 입력란과 같은 자리·같은 둥근 모서리 */
+.attach{display:flex;gap:.6rem;padding:.4rem .5rem;border:1px solid transparent;border-radius:10px}
+.attach:hover{border-color:var(--line);background:var(--bg)}
+.attach-thumb{flex:none;align-self:flex-start;max-width:45%;max-height:100%;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.attach-list{flex:1;min-width:0;margin:0;padding:0;list-style:none;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.attach-list li{display:flex;flex-direction:column;padding:.1rem 0 .35rem}
+.attach-list li + li{border-top:1px solid var(--line);padding-top:.35rem}
+/* 긴 이름(캡처 이름 등)은 두 줄까지 */
+.file-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:.9rem;font-weight:600;line-height:1.35}
+.file-size{font-size:.75rem;color:var(--muted)}
 .tool:focus-visible,.primary:focus-visible,.copy:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
 .foot{display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem .5rem .85rem;font-size:.75rem;color:var(--muted);-webkit-app-region:no-drag}

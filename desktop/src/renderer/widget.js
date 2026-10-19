@@ -2,6 +2,8 @@
 // 고정한 글을 그대로 고쳐 쓰고(멈추면 저장), 복사 버튼으로 클립보드에 넣습니다.
 // + 버튼으로 새 글을 쓰면 저장과 동시에 위젯에 고정되고, 클립보드 아이콘은 지금 클립보드를 새 글로 저장합니다.
 // 윗줄의 화살표로 접으면 윗줄만 남습니다.
+// 클립보드에 파일이나 캡처한 그림이 있으면 Storage 에 올려 파일 글로 저장합니다(docs/FILES.md).
+// 고정한 글이 파일 글이면 입력란 대신 미리보기와 파일 이름을 보여 주고, 복사 버튼은 파일을 클립보드에 넣습니다.
 import {
   initializeAuth, indexedDBLocalPersistence, browserLocalPersistence,
   onAuthStateChanged, signInWithCredential, signOut, GoogleAuthProvider, connectAuthEmulator
@@ -20,6 +22,8 @@ const OWNER_UID = "PKfixfmWHlVOfBMPPvaileeINRC3";
 const maxLen = () => (uid === OWNER_UID ? 20000 : 5000);
 /* 입력을 멈추고 이만큼 지나면 저장합니다. */
 const SAVE_DELAY_MS = 700;
+/* 파일 글의 text: 파일 이름들을 ", " 로 이어 이만큼에서 자릅니다. (docs/FILES.md) */
+const FILE_TEXT_MAX = 200;
 
 const env = await api.env();
 const app = createApp(env.emulator);
@@ -29,7 +33,7 @@ if (env.emulator) connectAuthEmulator(auth, EMULATOR_AUTH_URL, { disableWarnings
 const db = getDatabase(app);
 
 let uid = null;
-let pinned = null;          // { id, text, updatedAt } | null
+let pinned = null;          // { id, text, updatedAt, files, thumb } | null  (files 가 있으면 파일 글)
 let unsubscribe = [];
 let statusTimer = null;
 
@@ -39,6 +43,7 @@ let composing = false;      // + 로 새 글을 쓰는 중 (고정한 글로 되
 let dirty = false;          // 아직 저장하지 않은 입력이 있음
 let saveTimer = null;
 let saving = Promise.resolve();
+let working = false;        // 파일을 올리거나 받는 중 (버튼을 거듭 누르지 않게)
 
 /* ---------- 반투명 ↔ 또렷 (메인 프로세스가 커서 위치를 알려 줍니다) ---------- */
 api.onHover((hovered) => document.documentElement.classList.toggle("is-hover", hovered));
@@ -63,7 +68,7 @@ $("btn-collapse").addEventListener("click", async () => {
   }
   applyCollapsed(collapsed);
   await api.setCollapsed(collapsed);
-  if (!collapsed && uid) input.focus();
+  if (!collapsed && uid && !$("editor").hidden) input.focus();
 });
 
 /* ---------- 상태 표시 ---------- */
@@ -79,6 +84,11 @@ function relative(ms) {
 function idleStatus() {
   if (!uid) return "로그인이 필요합니다";
   if (dirty) return input.value.trim() ? "입력 중…" : "빈 글은 저장되지 않습니다";
+  const fileNote = shownFileNote();
+  if (fileNote) {
+    const count = fileNote.files.length > 1 ? `파일 ${fileNote.files.length}개 · ` : "";
+    return `위젯에 고정됨 · ${count}${relative(fileNote.updatedAt)} 올림`;
+  }
   if (composing || !draftId) return "적으면 저장되고 위젯에 고정됩니다";
   return pinned && pinned.id === draftId ? `위젯에 고정됨 · ${relative(pinned.updatedAt)} 수정` : "저장했습니다";
 }
@@ -100,42 +110,95 @@ function flash(message, kind = "ok") {
   statusTimer = setTimeout(showIdleStatus, 1800);
 }
 
+/** 올리기·받기처럼 오래 걸리는 동안 띄워 둡니다. 끝나면 flash 로 바꿉니다. */
+function busy(message) {
+  const el = $("status");
+  el.className = "status is-ok";
+  el.textContent = message;
+  $("card").classList.add("is-busy");
+  clearTimeout(statusTimer);
+}
+
 const flashing = () => $("card").classList.contains("is-busy");
 
 setInterval(() => { if (!flashing()) showIdleStatus(); }, 30000);
 
 /* ---------- 그리기 ---------- */
+function formatSize(bytes) {
+  const n = Number(bytes) || 0;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(n < 10 * 1024 ? 1 : 0)} KB`;
+  return `${(n / 1024 / 1024).toFixed(n < 10 * 1024 * 1024 ? 1 : 0)} MB`;
+}
+
+const fileNames = (files) => files.map((f) => f.name).join(", ");
+
+/** 위젯이 지금 보여 주는 글이 파일 글이면 그 글. (+ 로 새 글을 쓰는 중이면 null) */
+function shownFileNote() {
+  return uid && !composing && !dirty && pinned && pinned.files && draftId === pinned.id ? pinned : null;
+}
+
+/** 파일 글: 첫 그림의 미리보기(thumb)와 파일마다 이름·크기 */
+function renderAttach(note) {
+  const img = $("attach-thumb");
+  const thumb = typeof note.thumb === "string" && note.thumb.startsWith("data:image/") ? note.thumb : "";
+  if ((img.getAttribute("src") || "") !== thumb) {
+    if (thumb) img.src = thumb;
+    else img.removeAttribute("src");
+  }
+  img.hidden = !thumb;
+  const firstImage = note.files.find((f) => String(f.type).startsWith("image/"));
+  img.alt = thumb && firstImage ? `${firstImage.name} 미리보기` : "";
+
+  $("attach-list").replaceChildren(...note.files.map((f) => {
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "file-name";
+    name.textContent = f.name;
+    name.title = f.name;
+    const size = document.createElement("span");
+    size.className = "file-size";
+    size.textContent = formatSize(f.size);
+    li.append(name, size);
+    return li;
+  }));
+}
+
 function render() {
   $("card").classList.remove("is-loading");
   $("signed-out").hidden = Boolean(uid);
-  $("editor").hidden = !uid;
   $("btn-copy").hidden = !uid;
   $("btn-new").hidden = !uid;
   $("btn-save-clip").hidden = !uid;
-  $("peek").textContent = uid ? (pinned ? pinned.text.split("\n")[0] : "고정한 글이 없습니다") : "";
+  $("peek").textContent = !uid ? "" : !pinned ? "고정한 글이 없습니다"
+    : pinned.files ? fileNames(pinned.files) : pinned.text.split("\n")[0];
 
   // 쓰고 있는 글은 건드리지 않습니다. 입력란이 비어 있거나 다른 글로 고정이 바뀌었을 때만 채웁니다.
   if (uid && !composing && !dirty) {
     const nextId = pinned ? pinned.id : null;
     if (document.activeElement !== input || nextId !== draftId) {
       draftId = nextId;
-      input.value = pinned ? pinned.text : "";
+      // 파일 글은 입력란에 넣지 않습니다. (고쳐 쓰지 않음)
+      input.value = pinned && !pinned.files ? pinned.text : "";
     }
   }
+  const fileNote = shownFileNote();
+  $("editor").hidden = !uid || Boolean(fileNote);
+  $("attach").hidden = !fileNote;
+  if (fileNote) renderAttach(fileNote);
   updateCopyButton();
   if (!flashing()) showIdleStatus();
 }
 
 function updateCopyButton() {
-  $("btn-copy").disabled = input.value.trim() === "";
+  $("btn-copy").disabled = working || (!shownFileNote() && input.value.trim() === "");
 }
 
 /* ---------- 저장 ---------- */
 /** 새 글을 만들고 같은 쓰기로 위젯에 고정합니다. (웹앱·폰과 같은 규칙) */
-async function createPinnedNote(text) {
-  const key = push(ref(db, `users/${uid}/notes`)).key;
+async function createPinnedNote(fields, key = push(ref(db, `users/${uid}/notes`)).key) {
   await update(ref(db, `users/${uid}`), {
-    [`notes/${key}`]: { text, createdAt: serverTimestamp(), updatedAt: serverTimestamp() },
+    [`notes/${key}`]: { ...fields, createdAt: serverTimestamp(), updatedAt: serverTimestamp() },
     pinned: key
   });
   return key;
@@ -156,11 +219,16 @@ function saveNow() {
     const text = raw.trim();
     if (!text) return showIdleStatus();
     if (tooLong(text)) return;
+    // 파일 글은 고쳐 쓰지 않습니다. (입력란이 숨어 있어 여기까지 올 일은 없지만, 혹시라도)
+    if (draftId && pinned && pinned.id === draftId && pinned.files) {
+      dirty = false;
+      return;
+    }
     try {
       if (draftId) {
         await update(ref(db, `users/${uid}/notes/${draftId}`), { text, updatedAt: serverTimestamp() });
       } else {
-        draftId = await createPinnedNote(text);
+        draftId = await createPinnedNote({ text });
         composing = false;
         flash("저장하고 위젯에 고정했습니다");
       }
@@ -216,8 +284,9 @@ $("btn-new").addEventListener("click", async () => {
     applyCollapsed(false);
     await api.setCollapsed(false);
   }
-  input.focus();
+  // 파일 글을 보고 있었다면 render 가 입력란을 다시 보여 준 뒤에 포커스를 줍니다.
   render();
+  input.focus();
 });
 
 /* ---------- 로그인 ---------- */
@@ -241,7 +310,17 @@ onAuthStateChanged(auth, (user) => {
     (snap) => {
       const val = snap.val() || {};
       const note = val.pinned && val.notes && val.notes[val.pinned];
-      pinned = note ? { id: val.pinned, text: note.text || "", updatedAt: note.updatedAt || note.createdAt || 0 } : null;
+      // files 는 배열로 오지만, 사이가 빈 번호면 객체로 옵니다.
+      const files = note && note.files
+        ? Object.values(note.files).filter((f) => f && typeof f.path === "string" && typeof f.name === "string")
+        : [];
+      pinned = note ? {
+        id: val.pinned,
+        text: note.text || "",
+        updatedAt: note.updatedAt || note.createdAt || 0,
+        files: files.length ? files : null,
+        thumb: note.thumb || null
+      } : null;
       render();
     },
     (err) => {
@@ -281,8 +360,43 @@ api.onSignOutRequest(async () => {
   signOut(auth);
 });
 
-/* ---------- 입력란의 글 → 클립보드 ---------- */
+/* ---------- 사진·파일: Storage 는 메인 프로세스가 사용자의 ID 토큰으로 부릅니다 ---------- */
+async function storageAuth() {
+  // 토큰을 못 받으면(오프라인 등) 글자는 그대로 저장하고, 파일은 메인 프로세스가 안내합니다.
+  const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+  return { bucket: app.options.storageBucket, idToken: idToken || "" };
+}
+
+api.onFileProgress(({ phase, done, total }) => {
+  if (!working) return;
+  const label = phase === "upload" ? "올리는 중…" : "받는 중…";
+  busy(total > 1 ? `${label} ${Math.min(done + 1, total)}/${total}` : label);
+});
+
+/** 파일 글 → 이 컴퓨터에 받아서 클립보드로 (탐색기에 붙이면 파일, 그림 한 장이면 그림으로도) */
+async function copyFileNote(note) {
+  if (working) return;
+  working = true;
+  updateCopyButton();
+  busy("받는 중…");
+  try {
+    const files = note.files.map(({ path, name, type, size }) => ({ path, name, type, size }));
+    const result = await api.copyFiles({ ...await storageAuth(), noteId: note.id, files });
+    if (result.kind === "error") flash(result.message, "error");
+    else flash("클립보드에 복사했습니다");
+  } catch (err) {
+    console.error(err);
+    flash("복사 실패: " + (err.code || err.message), "error");
+  } finally {
+    working = false;
+    updateCopyButton();
+  }
+}
+
+/* ---------- 고정한 글 → 클립보드 ---------- */
 $("btn-copy").addEventListener("click", async () => {
+  const fileNote = shownFileNote();
+  if (fileNote) return copyFileNote(fileNote);
   const text = input.value.trim();
   if (!text) return flash("복사할 글이 없습니다", "error");
   await api.copy(text);
@@ -291,24 +405,68 @@ $("btn-copy").addEventListener("click", async () => {
   flushSave();
 });
 
-/* ---------- 클립보드 → 새 글 (데스크톱 → 폰) ---------- */
-$("btn-save-clip").addEventListener("click", async () => {
-  if (!uid) return;
-  const text = String(await api.readClipboard() || "").trim();
+/* ---------- 클립보드 → 새 글 (데스크톱 → 폰) ----------
+ * 파일(탐색기에서 복사) → 그림(캡처) → 글자 순서로 봅니다. 파일·그림은 메인 프로세스가 먼저 올리고,
+ * 여기서 글과 고정을 한 번에 씁니다. 그 쓰기가 실패하면 올린 파일을 지웁니다. (docs/FILES.md "순서") */
+async function saveClipboardText(text, key) {
+  text = text.trim();
   if (!text) return flash("클립보드에 글자가 없습니다", "error");
   if (tooLong(text)) return;
+  await flushSave();
+  // 새 글은 곧바로 위젯에 고정되고, 입력란도 그 글로 바뀝니다.
+  composing = false;
+  dirty = false;
+  draftId = await createPinnedNote({ text }, key);
+  input.value = text;
+  updateCopyButton();
+  flash("클립보드를 새 글로 저장하고 고정했습니다");
+}
+
+async function saveClipboardFiles({ files, thumb, skipped }, key, storage) {
+  busy("저장하는 중…");
+  await flushSave();
+  composing = false;
+  dirty = false;
+  const note = { text: fileNames(files).slice(0, FILE_TEXT_MAX), files };
+  if (thumb) note.thumb = thumb;
   try {
-    await flushSave();
-    // 새 글은 곧바로 위젯에 고정되고, 입력란도 그 글로 바뀝니다.
-    composing = false;
-    dirty = false;
-    draftId = await createPinnedNote(text);
-    input.value = text;
-    updateCopyButton();
-    flash("클립보드를 새 글로 저장하고 고정했습니다");
+    draftId = await createPinnedNote(note, key);
+  } catch (err) {
+    api.discardUploads({ ...storage, paths: files.map((f) => f.path) });
+    throw err;
+  }
+  input.value = "";
+  render();
+  const what = files.length === 1 && files[0].type.startsWith("image/") ? "그림" : "파일";
+  flash(skipped
+    ? `클립보드의 ${what}을 저장하고 고정했습니다 (폴더 ${skipped}개는 건너뜀)`
+    : `클립보드의 ${what}을 저장하고 고정했습니다`);
+}
+
+$("btn-save-clip").addEventListener("click", async () => {
+  if (!uid || working) return;
+  const owner = uid;
+  working = true;
+  updateCopyButton();
+  try {
+    const key = push(ref(db, `users/${uid}/notes`)).key;
+    const storage = await storageAuth();
+    const got = await api.saveClipboard({ ...storage, uid, noteId: key });
+    if (uid !== owner) {
+      // 올리는 사이에 로그아웃했다면 글을 쓰지 않고 올린 파일만 치웁니다.
+      if (got.kind === "files") api.discardUploads({ ...storage, paths: got.files.map((f) => f.path) });
+      return;
+    }
+    if (got.kind === "error") flash(got.message, "error");
+    else if (got.kind === "empty") flash("클립보드가 비어 있습니다", "error");
+    else if (got.kind === "text") await saveClipboardText(got.text, key);
+    else await saveClipboardFiles(got, key, storage);
   } catch (err) {
     console.error(err);
     flash("저장 실패: " + (err.code || err.message), "error");
+  } finally {
+    working = false;
+    updateCopyButton();
   }
 });
 

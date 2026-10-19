@@ -14,7 +14,8 @@
 1. <https://console.firebase.google.com> 접속 → **프로젝트 추가**
 2. 이름: `post-it` (원하는 이름 아무거나)
 3. Google 애널리틱스는 **사용 안 함**으로 두어도 됩니다.
-4. 요금제는 **Spark(무료)** 그대로 둡니다. 신용카드가 필요 없습니다.
+4. 요금제는 일단 **Spark(무료)** 그대로 둡니다. 글만 쓴다면 끝까지 무료입니다.
+   사진·파일 공유를 쓰려면 4-1단계에서 **Blaze(종량제)** 로 바꿉니다.
 
 ---
 
@@ -51,6 +52,32 @@
 - 로그인하지 않으면 아무것도 읽을 수 없습니다.
 - 소유자 UID(규칙 안의 `PKfix…` 값)는 글 하나 20,000자, 그 외 계정은 5,000자까지. 정해진 필드 외에는 저장되지 않습니다.
 - 자기 프로젝트로 만든다면 규칙 안의 소유자 UID 를 본인 UID 로 바꾸세요(Authentication → 사용자 탭에 보입니다).
+
+---
+
+## 4-1. Storage 켜기 — 사진·파일 공유
+
+사진·파일은 Realtime Database 가 아니라 **Cloud Storage** 에 둡니다(구조는 [FILES.md](FILES.md)).
+2024년 10월 이후 만든 프로젝트는 Storage 를 쓰려면 **Blaze(종량제)** 요금제여야 합니다.
+무료 한도(저장 5GB, 하루 내려받기 1GB 등)는 Blaze 에서도 그대로라, 넘지 않으면 청구되지 않습니다.
+
+1. 콘솔 왼쪽 아래 **요금제 업그레이드 → Blaze** (결제 계정 연결)
+2. 같은 화면에서 **예산 알림**을 꼭 걸어 둡니다 (예: 월 1,000원). 넘으면 메일이 옵니다.
+3. **빌드 → Storage → 시작하기**
+   - 위치: **`us-west1`** (오리건). 무료 한도는 `us-central1`·`us-east1`·`us-west1` 에만 적용되고, 그중 한국에서 가장 가깝습니다. 나중에 바꿀 수 없습니다.
+   - 보안 규칙: **프로덕션 모드**
+4. **Storage → 규칙** 탭에 저장소의 [`storage.rules`](../storage.rules) 를 붙여 넣고 **게시**
+   - 자기 UID 아래만 읽기·쓰기·삭제, 파일 하나 10MB(소유자 100MB), 덮어쓰기 금지
+5. **웹앱이 그림을 받을 수 있게 CORS 설정** (한 번만). [Cloud Shell](https://shell.cloud.google.com) 이나
+   gcloud 가 설치된 터미널에서:
+   ```bash
+   gcloud storage buckets update gs://post-it-249dc.firebasestorage.app --cors-file=storage.cors.json
+   ```
+   ([`storage.cors.json`](../storage.cors.json) 은 `shy.ai.kr` 에서 내려받기만 허용합니다.
+   Cloud Shell 이라면 파일 내용을 먼저 붙여 넣어 만들어 두세요.)
+   이걸 빠뜨리면 웹앱의 **복사·내려받기**만 실패합니다. 올리기와 폰·Windows 위젯은 상관없습니다.
+
+> 사진·파일을 안 쓸 거라면 이 단계는 건너뛰어도 됩니다. 글 공유는 그대로 동작합니다.
 
 ---
 
@@ -166,6 +193,9 @@ cd android
 | 앱 실행 시 "Firebase 설정이 없습니다" 대화상자 | `android/app/google-services.json` 이 없습니다. 7단계를 하세요. |
 | 안드로이드에서 로그인만 실패 | 설치된 APK 를 서명한 키의 SHA-1 이 7단계에 등록되지 않았습니다. |
 | 웹앱에서 "읽기 실패: permission-denied" | 4단계 규칙을 게시하지 않았습니다. |
+| 파일을 올리면 "올리기 실패: storage/…" | 4-1단계(Blaze, Storage 시작, 규칙 게시)를 안 했습니다. |
+| 웹앱에서 사진 복사·내려받기만 실패 | 4-1단계 5번 CORS 설정을 안 했습니다. |
+| 파일을 올리면 저장은 되는데 폰·위젯에 안 보임 | Realtime Database 규칙을 최신 `database.rules.json` 으로 다시 게시하세요. |
 | 위젯 내용이 오래됨 | 정상입니다. 아래 "위젯이 갱신되는 시점"을 보세요. |
 
 ### 위젯이 갱신되는 시점

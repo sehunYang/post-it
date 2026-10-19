@@ -31,8 +31,8 @@ android {
         applicationId = "kr.ai.shy.postit"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
     }
 
     if (hasReleaseKeystore) {
@@ -79,6 +79,8 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-database")
+    // 사진·파일 본체 (docs/FILES.md)
+    implementation("com.google.firebase:firebase-storage")
 
     // Google 로그인 (Credential Manager — 현재 권장 방식)
     implementation("androidx.credentials:credentials:1.5.0")

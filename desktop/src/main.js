@@ -9,6 +9,8 @@ const {
 const path = require("node:path");
 const settings = require("./settings");
 const { startLoginServer } = require("./auth-server");
+const { createStorage } = require("./storage");
+const clip = require("./clip");
 
 /* ---------- 실행 환경 ---------- */
 // E2E 테스트는 격리된 사용자 폴더와 에뮬레이터를 씁니다. 설치본은 이 스위치들을 무시합니다.
@@ -266,11 +268,20 @@ ipcMain.handle("env:get", () => ({
   collapsed: settings.get().collapsed
 }));
 
-ipcMain.handle("clipboard:write", (_e, text) => {
-  clipboard.writeText(String(text));
+ipcMain.handle("clipboard:write", async (_e, text) => {
+  await clipboard.writeText(String(text));
   return true;
 });
-ipcMain.handle("clipboard:read", () => clipboard.readText());
+
+// 사진·파일 (docs/FILES.md). Storage 는 CORS 때문에 여기서 사용자의 ID 토큰으로 부릅니다.
+// 진행 상황("올리는 중… 1/3")은 요청한 화면에만 알립니다.
+const storage = createStorage({ emulator: EMULATOR });
+const progressTo = (sender) => (progress) => { if (!sender.isDestroyed()) sender.send("files:progress", progress); };
+ipcMain.handle("clip:save", (e, req) =>
+  clip.saveClipboard(storage, req, progressTo(e.sender)).catch(clip.toFailure));
+ipcMain.handle("clip:discard", (_e, req) => clip.discard(storage, req));
+ipcMain.handle("files:copy", (e, req) =>
+  clip.copyFiles(storage, req, progressTo(e.sender)).then(() => ({ kind: "ok" }), clip.toFailure));
 
 ipcMain.handle("widget:hide", () => hideWidget());
 // 접으면 창을 윗줄 높이로 줄입니다. 위쪽 모서리는 그대로라 아래로만 접히고 펼쳐집니다.

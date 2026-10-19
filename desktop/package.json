@@ -1,7 +1,7 @@
 {
   "name": "post-it-desktop",
   "productName": "Post-it",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Post-it 데스크톱 위젯 — 고정한 글을 바탕화면에 띄우고 클릭 한 번으로 복사합니다.",
   "author": "양세훈",
   "license": "UNLICENSED",
@@ -10,7 +10,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "start": "npm run build && electron .",
-    "test:e2e": "npm run build && firebase --config ../firebase.json emulators:exec --only auth,database --project demo-postit \"playwright test\"",
+    "test:e2e": "npm run build && firebase --config ../firebase.json emulators:exec --only auth,database,storage --project demo-postit \"playwright test\"",
     "dist": "npm run build && electron-builder --win nsis --publish never",
     "test:sandbox": "powershell -NoProfile -ExecutionPolicy Bypass -File sandbox/run.ps1"
   },

@@ -4,6 +4,7 @@
 
 옮기고 싶은 말을 데스크톱에서 적어두면, 갤럭시 홈 화면 위젯을 한 번 눌러 클립보드에 붙여넣습니다.
 반대로 폰에서 적거나 공유한 글도 데스크톱에 바로 나타납니다.
+**사진과 파일도 같습니다.** 클립보드에 올린 스크린샷·파일이 다른 PC나 폰의 클립보드로 넘어갑니다.
 
 설치도, 설정도 없습니다. **Google 계정으로 로그인하면 바로 씁니다.**
 
@@ -16,6 +17,18 @@
 
 끝입니다. 웹에서 글을 적으면 **새 글이 자동으로 위젯에 고정**되어 폰 위젯에 뜨고, 위젯을 누르면 클립보드로 들어갑니다.
 위젯 아래의 **열기** 버튼을 누르면 Post-it 앱이 열립니다.
+
+### 사진·파일 보내기
+
+| 어디서 | 올리기 | 받아서 클립보드로 |
+|---|---|---|
+| 웹앱 | 페이지에서 **Ctrl + V** (스크린샷, 탐색기에서 복사한 파일), 입력창으로 **끌어다 놓기**, **사진·파일 첨부** 버튼 | 사진 한 장은 **복사** → 그림으로 붙여넣기. 그 외는 **내려받기** (브라우저는 파일을 클립보드에 넣을 수 없습니다) |
+| Windows 위젯 | 탐색기에서 파일을 복사하거나 스크린샷을 찍은 뒤 **클립보드 아이콘** | **복사** → 탐색기에 붙이면 파일, 카톡·문서에 붙이면 그림 |
+| 폰 | 갤러리·파일 앱에서 **공유 → Post-it**, 위젯의 **클립보드 아이콘**, 앱의 **사진·파일 첨부** | 위젯을 누르면 클립보드로. 앱에서는 **공유**로 다른 앱에 바로 넘길 수도 있습니다 |
+
+- 파일 하나는 **10MB까지**, 한 번에 **10개까지** 올릴 수 있습니다.
+- 사진·파일도 새로 올리면 **자동으로 위젯에 고정**되고, 위젯에는 미리보기와 파일 이름이 뜹니다.
+- 지우면 저장된 파일도 함께 지워집니다.
 
 폰 설치 페이지: **<https://shy.ai.kr/post-it/install/>**
 
@@ -33,9 +46,11 @@
 - **옮기기**: 위젯 윗줄(Post-it 글자 쪽)을 잡고 끌면 됩니다. 위치는 기억됩니다.
 - **본문**: 고정한 글이 그대로 입력란에 뜹니다. 고쳐 쓰고 손을 멈추면 저장되어 폰에도 갑니다.
 - **복사**: 아래쪽 복사 버튼을 누르면 입력란의 글이 클립보드로 들어갑니다.
+  고정한 글이 사진·파일이면 미리보기와 파일 이름이 뜨고, 복사하면 파일이 클립보드로 들어갑니다(탐색기에 붙이면 파일, 카톡·문서에 붙이면 그림).
 - **＋ 아이콘**: 새 글을 씁니다. 저장되는 순간 위젯에 고정됩니다.
 - **접기**: 왼쪽 위 화살표를 누르면 윗줄만 남습니다(고정한 글의 첫 줄이 보입니다). 다시 누르면 펼쳐집니다.
 - **클립보드 아이콘**: 지금 클립보드의 글을 새 글로 저장하고 고정합니다(데스크톱 → 폰).
+  탐색기에서 복사한 파일이나 스크린샷이 들어 있으면 그 사진·파일을 올립니다.
 
 ## 알아둘 점
 
@@ -59,12 +74,14 @@ GitHub Pages 웹앱                             네이티브 앱 + 홈 화면 �
   · 위젯에 띄울 글 고정                          · 위젯의 클립보드 아이콘 → 지금 클립보드를 새 글로 저장
                                               · 다른 앱에서 "공유 → Post-it"
         └──────────► Firebase Realtime Database ◄──────────┘
-                     users/{uid}/notes/{id}  { text, createdAt, updatedAt }
+                     users/{uid}/notes/{id}  { text, createdAt, updatedAt, files?, thumb? }
                      users/{uid}/pinned      "{noteId}"
+                     Cloud Storage          users/{uid}/{noteId}/{i}/{파일 이름}   ← 사진·파일 본체
 ```
 
 - **웹앱** — GitHub Pages (정적 호스팅, 무료)
-- **데이터베이스** — Firebase Realtime Database (Spark 무료 티어). 규칙은 [`database.rules.json`](database.rules.json)
+- **데이터베이스** — Firebase Realtime Database. 규칙은 [`database.rules.json`](database.rules.json)
+- **파일** — Cloud Storage for Firebase (Blaze, 무료 한도 안에서 운영). 규칙은 [`storage.rules`](storage.rules), 세 앱이 지키는 규약은 [`docs/FILES.md`](docs/FILES.md)
 - **위젯** — 네이티브 안드로이드 앱 (Kotlin). APK는 [Releases](https://github.com/sehunYang/post-it/releases)
 - **바탕화면 위젯** — Windows용 Electron 앱. 설치 파일도 같은 Releases 에 있습니다
 - **디자인** — [shy.ai.kr](https://shy.ai.kr) 의 디자인 시스템을 그대로 따릅니다.
@@ -77,6 +94,8 @@ GitHub Pages 웹앱                             네이티브 앱 + 홈 화면 �
 | `install/` | 폰 설치 안내 페이지 (QR이 여기로 옵니다) |
 | `desktop/` | Windows 바탕화면 위젯 (Electron) — [desktop/README.md](desktop/README.md) |
 | `database.rules.json` | Realtime Database 보안 규칙 |
+| `storage.rules`, `storage.cors.json` | Storage 보안 규칙과 웹앱 내려받기용 CORS 설정 |
+| `docs/FILES.md` | 사진·파일 공유 규약 (저장 위치, 제한, 받는 쪽 동작) |
 | `android/` | 안드로이드 앱 + 위젯 (Gradle 프로젝트) |
 | `docs/SETUP.md` | 소유자용: 처음 한 번 하는 Firebase 설정 |
 | `docs/RELEASE.md` | 소유자용: 새 APK 내는 순서 |

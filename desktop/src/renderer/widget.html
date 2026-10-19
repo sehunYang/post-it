@@ -44,6 +44,12 @@
       placeholder="여기에 적으면 저장되고 위젯에 고정됩니다."></textarea>
   </section>
 
+  <!-- 고정한 글이 사진·파일이면: 미리보기와 파일 이름·크기. 고쳐 쓸 수 없고 복사만 됩니다. -->
+  <section id="attach" class="attach" hidden>
+    <img id="attach-thumb" class="attach-thumb" alt="" hidden>
+    <ul id="attach-list" class="attach-list" aria-label="첨부 파일"></ul>
+  </section>
+
   <footer class="foot">
     <span id="status" class="status" role="status" aria-live="polite">불러오는 중…</span>
     <button id="btn-copy" class="copy" type="button" title="클립보드로 복사" hidden>복사</button>
