@@ -21,3 +21,6 @@ android/app/google-services.json
 # 릴리스 서명 키 (절대 커밋 금지 — 백업은 따로)
 android/keystore/
 android/keystore.properties
+
+# Firebase 에뮬레이터 로그
+*-debug.log
