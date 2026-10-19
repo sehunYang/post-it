@@ -73,6 +73,9 @@ html.is-collapsed .foot{display:none!important}
 /* 사진·파일 글: 왼쪽에 미리보기, 오른쪽에 파일 이름과 크기. 입력란과 같은 자리·같은 둥근 모서리 */
 .attach{display:flex;gap:.6rem;padding:.4rem .5rem;border:1px solid transparent;border-radius:10px}
 .attach:hover{border-color:var(--line);background:var(--bg)}
+.attach:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+/* 파일을 끌어다 올리는 중: 카드 테두리로 "여기에 놓으세요" */
+.card.is-dragover{opacity:1;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset,0 6px 18px rgba(0,0,0,.14)}
 .attach-thumb{flex:none;align-self:flex-start;max-width:45%;max-height:100%;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
 .attach-list{flex:1;min-width:0;margin:0;padding:0;list-style:none;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 .attach-list li{display:flex;flex-direction:column;padding:.1rem 0 .35rem}

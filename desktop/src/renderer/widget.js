@@ -4,6 +4,7 @@
 // 윗줄의 화살표로 접으면 윗줄만 남습니다.
 // 클립보드에 파일이나 캡처한 그림이 있으면 Storage 에 올려 파일 글로 저장합니다(docs/FILES.md).
 // 고정한 글이 파일 글이면 입력란 대신 미리보기와 파일 이름을 보여 주고, 복사 버튼은 파일을 클립보드에 넣습니다.
+// 위젯 안에서 Ctrl+V 로 파일·그림을 붙여넣거나 파일을 끌어다 놓아도 올라갑니다.
 import {
   initializeAuth, indexedDBLocalPersistence, browserLocalPersistence,
   onAuthStateChanged, signInWithCredential, signOut, GoogleAuthProvider, connectAuthEmulator
@@ -173,6 +174,13 @@ function render() {
   $("peek").textContent = !uid ? "" : !pinned ? "고정한 글이 없습니다"
     : pinned.files ? fileNames(pinned.files) : pinned.text.split("\n")[0];
 
+  // 입력란을 비우고(전체 선택 → 지우기) 나갔거나, + 를 누르고 아무것도 안 적은 채 나갔다면
+  // 쓰던 글이 없는 것이므로 고정한 글(파일 글이면 미리보기)로 돌아갑니다.
+  if (document.activeElement !== input && input.value.trim() === "") {
+    dirty = false;
+    composing = false;
+  }
+
   // 쓰고 있는 글은 건드리지 않습니다. 입력란이 비어 있거나 다른 글로 고정이 바뀌었을 때만 채웁니다.
   if (uid && !composing && !dirty) {
     const nextId = pinned ? pinned.id : null;
@@ -217,7 +225,11 @@ function saveNow() {
     if (!uid || !dirty) return;
     const raw = input.value;
     const text = raw.trim();
-    if (!text) return showIdleStatus();
+    if (!text) {
+      // 빈 글은 저장하지 않습니다. 고칠 것이 남지 않았으니 고정한 글로 돌아갈 수 있게 합니다.
+      if (input.value === raw) dirty = false;
+      return showIdleStatus();
+    }
     if (tooLong(text)) return;
     // 파일 글은 고쳐 쓰지 않습니다. (입력란이 숨어 있어 여기까지 올 일은 없지만, 혹시라도)
     if (draftId && pinned && pinned.id === draftId && pinned.files) {
@@ -234,7 +246,9 @@ function saveNow() {
       }
       // 저장하는 사이에 더 적었다면 그 내용은 다음 저장으로 넘깁니다.
       if (input.value === raw) dirty = false;
-      if (!flashing()) showIdleStatus();
+      // 저장하는 사이에 다른 기기가 다른 글(사진·파일 포함)을 고정했을 수 있으니 다시 그립니다.
+      if (!dirty) render();
+      else if (!flashing()) showIdleStatus();
     } catch (err) {
       console.error(err);
       flash("저장 실패: " + (err.code || err.message), "error");
@@ -284,9 +298,12 @@ $("btn-new").addEventListener("click", async () => {
     applyCollapsed(false);
     await api.setCollapsed(false);
   }
-  // 파일 글을 보고 있었다면 render 가 입력란을 다시 보여 준 뒤에 포커스를 줍니다.
-  render();
+  // 파일 글을 보고 있었다면 입력란을 먼저 보여 주고 포커스를 줍니다.
+  // (render 는 포커스 없는 빈 입력란을 "쓰던 글 없음" 으로 보므로 순서가 중요합니다)
+  $("attach").hidden = true;
+  $("editor").hidden = false;
   input.focus();
+  render();
 });
 
 /* ---------- 로그인 ---------- */
@@ -439,11 +456,15 @@ async function saveClipboardFiles({ files, thumb, skipped }, key, storage) {
   render();
   const what = files.length === 1 && files[0].type.startsWith("image/") ? "그림" : "파일";
   flash(skipped
-    ? `클립보드의 ${what}을 저장하고 고정했습니다 (폴더 ${skipped}개는 건너뜀)`
-    : `클립보드의 ${what}을 저장하고 고정했습니다`);
+    ? `${what}을 올리고 고정했습니다 (폴더 ${skipped}개는 건너뜀)`
+    : `${what}을 올리고 고정했습니다`);
 }
 
-$("btn-save-clip").addEventListener("click", async () => {
+/**
+ * 클립보드(또는 끌어다 놓은 파일)를 새 글로 저장합니다.
+ * pick 은 메인 프로세스에 올리기를 맡기고 { kind: "files" | "text" | "empty" | "error" } 를 돌려줍니다.
+ */
+async function saveNew(pick) {
   if (!uid || working) return;
   const owner = uid;
   working = true;
@@ -451,7 +472,7 @@ $("btn-save-clip").addEventListener("click", async () => {
   try {
     const key = push(ref(db, `users/${uid}/notes`)).key;
     const storage = await storageAuth();
-    const got = await api.saveClipboard({ ...storage, uid, noteId: key });
+    const got = await pick({ ...storage, uid, noteId: key });
     if (uid !== owner) {
       // 올리는 사이에 로그아웃했다면 글을 쓰지 않고 올린 파일만 치웁니다.
       if (got.kind === "files") api.discardUploads({ ...storage, paths: got.files.map((f) => f.path) });
@@ -468,7 +489,52 @@ $("btn-save-clip").addEventListener("click", async () => {
     working = false;
     updateCopyButton();
   }
+}
+
+$("btn-save-clip").addEventListener("click", () => saveNew((req) => api.saveClipboard(req)));
+
+/* ---------- Ctrl+V 로 파일·그림 붙여넣기 ----------
+ * 글자가 들어 있으면 평소처럼 입력란에 붙입니다(엑셀 셀처럼 그림이 함께 와도 글자).
+ * 글자 없이 파일(탐색기에서 복사)이나 그림(캡처)만 있으면 "클립보드 저장" 과 같이 올립니다. */
+document.addEventListener("paste", (e) => {
+  if (!uid) return;
+  const data = e.clipboardData;
+  if (!data || data.types.includes("text/plain")) return;
+  // 탐색기에서 복사한 파일이 붙여넣기 이벤트에 보이지 않을 수도 있어서, 무엇이 있는지는 메인 프로세스가 직접 봅니다.
+  e.preventDefault();
+  saveNew((req) => api.saveClipboard(req));
 });
+
+/* ---------- 파일 끌어다 놓기 ---------- */
+const card = $("card");
+const hasFiles = (e) => Boolean(e.dataTransfer) && Array.from(e.dataTransfer.types).includes("Files");
+
+card.addEventListener("dragover", (e) => {
+  if (!uid || !hasFiles(e)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "copy";
+  card.classList.add("is-dragover");
+});
+card.addEventListener("dragleave", (e) => {
+  if (!card.contains(e.relatedTarget)) card.classList.remove("is-dragover");
+});
+card.addEventListener("drop", (e) => {
+  card.classList.remove("is-dragover");
+  if (!uid || !hasFiles(e)) return;
+  e.preventDefault();
+  const files = Array.from(e.dataTransfer.files);
+  if (!files.length) return;
+  saveNew((req) => api.saveDropped(req, files));
+});
+// 위젯 밖으로 떨어뜨리거나 놓친 파일이 창을 그 파일로 바꾸지 않게 합니다.
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => e.preventDefault());
+
+/* 미리보기를 눌러도 위젯에 포커스가 가도록 — 그래야 그 상태에서 Ctrl+V 가 됩니다. */
+$("attach").addEventListener("mousedown", () => $("attach").focus());
+
+/* 숨겼다가 다시 보이면, 그사이 고정이 바뀌었을 수 있으니 다시 그립니다. */
+document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
 
 $("btn-hide").addEventListener("click", async () => {
   await flushSave();

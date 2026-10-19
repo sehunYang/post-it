@@ -1,7 +1,7 @@
 {
   "name": "post-it-desktop",
   "productName": "Post-it",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Post-it 데스크톱 위젯 — 고정한 글을 바탕화면에 띄우고 클릭 한 번으로 복사합니다.",
   "author": "양세훈",
   "license": "UNLICENSED",
