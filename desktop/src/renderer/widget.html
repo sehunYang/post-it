@@ -41,11 +41,11 @@
   <!-- 로그인 후: 고정한 글을 바로 고쳐 씁니다. 멈추면 저장됩니다. -->
   <section id="editor" class="editor" hidden>
     <textarea id="note-input" class="note-input" spellcheck="false" aria-label="고정한 글"
-      placeholder="여기에 적으면 저장되고 위젯에 고정됩니다."></textarea>
+      placeholder="여기에 적으면 저장되고 위젯에 고정됩니다.&#10;사진·파일은 Ctrl+V 나 끌어다 놓기로 올립니다."></textarea>
   </section>
 
   <!-- 고정한 글이 사진·파일이면: 미리보기와 파일 이름·크기. 고쳐 쓸 수 없고 복사만 됩니다. -->
-  <section id="attach" class="attach" hidden>
+  <section id="attach" class="attach" tabindex="0" aria-label="고정한 사진·파일" hidden>
     <img id="attach-thumb" class="attach-thumb" alt="" hidden>
     <ul id="attach-list" class="attach-list" aria-label="첨부 파일"></ul>
   </section>

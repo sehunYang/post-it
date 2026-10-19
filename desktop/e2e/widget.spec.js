@@ -81,6 +81,14 @@ function clipboardFileList() {
   return out.split(/\r?\n/).filter(Boolean);
 }
 
+/** 탐색기에서 파일을 복사한 것처럼 Windows 클립보드에 파일 목록을 올립니다. */
+function setClipboardFiles(paths) {
+  const script = "$p = $env:POSTIT_TEST_PATHS | ConvertFrom-Json\nSet-Clipboard -LiteralPath $p";
+  execFileSync("powershell.exe",
+    ["-NoProfile", "-NonInteractive", "-Sta", "-EncodedCommand", Buffer.from(script, "utf16le").toString("base64")],
+    { env: { ...process.env, POSTIT_TEST_PATHS: JSON.stringify(paths) } });
+}
+
 /** 단색 PNG 와 그 미리보기(thumb)를 앱의 nativeImage 로 만듭니다. */
 async function makePng(app, width, height) {
   const { png, thumb } = await main(app, ({ nativeImage }, { width, height }) => {
@@ -502,7 +510,7 @@ test.describe.serial("데스크톱 위젯", () => {
       await clipboard.write([new ClipboardItem({ "image/png": new Blob([data], { type: "image/png" }) })]);
     }, png.toString("base64"));
     await page.locator("#btn-save-clip").click();
-    await expect(page.locator("#status")).toHaveText("클립보드의 그림을 저장하고 고정했습니다", { timeout: 20_000 });
+    await expect(page.locator("#status")).toHaveText("그림을 올리고 고정했습니다", { timeout: 20_000 });
 
     const id = await dbGet(`users/${uid}/pinned`);
     expect(id).not.toBe("nfile");
@@ -526,6 +534,102 @@ test.describe.serial("데스크톱 위젯", () => {
     await expect(page.locator("#status")).toHaveText("클립보드에 복사했습니다", { timeout: 20_000 });
     expect(clipboardFileList()).toEqual([path.join(userData, "received", id, "0", file.name)]);
     expect(await main(app, ({ clipboard }) => clipboard.has("image/png"))).toBe(true);
+  });
+
+  test("입력란을 비우고 나간 뒤 다른 기기에서 파일을 고정해도 미리보기가 뜬다 (예전에는 빈 입력란에 멈춤)", async () => {
+    const now = Date.now();
+    await dbPut(`users/${uid}/notes/nclear`, { text: "지울 글", createdAt: now, updatedAt: now });
+    await dbPut(`users/${uid}/pinned`, "nclear");
+    await expect(page.locator("#note-input")).toHaveValue("지울 글");
+    await page.locator("#note-input").click();
+    await page.keyboard.press("Control+A");
+    await page.keyboard.press("Delete");
+    await page.locator(".brand").click();
+    await page.waitForTimeout(1200);
+
+    await dbPut(`users/${uid}/pinned`, "nfile");
+    await expect(page.locator("#attach")).toBeVisible();
+    await expect(page.locator(".file-name")).toHaveText(["사진.png", "보고서 초안.txt"]);
+    await expect(page.locator("#btn-copy")).toBeEnabled();
+  });
+
+  test("Ctrl+V: 탐색기에서 복사한 파일을 입력란에 붙여넣으면 올라가고 고정된다", async () => {
+    test.setTimeout(90_000);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "postit-paste-"));
+    const a = path.join(dir, "회의록.txt");
+    const b = path.join(dir, "표.csv");
+    fs.writeFileSync(a, "회의 내용");
+    fs.writeFileSync(b, "a,b\n1,2\n");
+    setClipboardFiles([a, b]);
+
+    await page.locator("#btn-new").click();
+    await expect(page.locator("#note-input")).toBeFocused();
+    await page.keyboard.press("Control+V");
+    await expect(page.locator("#status")).toHaveText("파일을 올리고 고정했습니다", { timeout: 30_000 });
+
+    const id = await dbGet(`users/${uid}/pinned`);
+    const note = await dbGet(`users/${uid}/notes/${id}`);
+    expect(note.files.map((f) => f.name)).toEqual(["회의록.txt", "표.csv"]);
+    expect((await storageGet(note.files[0].path)).toString("utf8")).toBe("회의 내용");
+    await expect(page.locator("#attach")).toBeVisible();
+    await expect(page.locator("#note-input")).toHaveValue("");
+  });
+
+  test("Ctrl+V: 캡처한 그림을 미리보기에 포커스를 둔 채 붙여넣어도 올라간다", async () => {
+    test.setTimeout(90_000);
+    const before = await dbGet(`users/${uid}/pinned`);
+    const { png } = await makePng(app, 300, 200);
+    await main(app, async ({ clipboard, ClipboardItem }, b64) => {
+      const data = Buffer.from(b64, "base64");
+      await clipboard.write([new ClipboardItem({ "image/png": new Blob([data], { type: "image/png" }) })]);
+    }, png.toString("base64"));
+    await page.locator("#attach").click();
+    await page.keyboard.press("Control+V");
+    await expect(page.locator("#status")).toHaveText("그림을 올리고 고정했습니다", { timeout: 30_000 });
+    const id = await dbGet(`users/${uid}/pinned`);
+    expect(id).not.toBe(before);
+    expect((await dbGet(`users/${uid}/notes/${id}`)).thumb).toMatch(/^data:image\/jpeg;base64,/);
+  });
+
+  test("Ctrl+V: 글자가 든 클립보드는 평소처럼 입력란에 붙고 파일로 올리지 않는다", async () => {
+    await main(app, ({ clipboard }) => clipboard.writeText("그냥 글자"));
+    await page.locator("#btn-new").click();
+    await page.keyboard.press("Control+V");
+    await expect(page.locator("#note-input")).toHaveValue("그냥 글자");
+    await expect.poll(async () => {
+      const id = await dbGet(`users/${uid}/pinned`);
+      return (await dbGet(`users/${uid}/notes/${id}`)).text;
+    }).toBe("그냥 글자");
+    const id = await dbGet(`users/${uid}/pinned`);
+    expect((await dbGet(`users/${uid}/notes/${id}`)).files).toBeUndefined();
+  });
+
+  test("끌어다 놓기: 위젯에 파일을 놓으면 올라가고 고정된다", async () => {
+    test.setTimeout(90_000);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "postit-drop-"));
+    const a = path.join(dir, "계획서.txt");
+    fs.writeFileSync(a, "계획");
+    // OS 끌어다 놓기는 자동화할 수 없어서, 실제 파일에서 온 File 을 숨은 input 으로 만든 뒤 drop 이벤트로 넘깁니다.
+    await page.evaluate(() => {
+      const i = document.createElement("input");
+      Object.assign(i, { type: "file", multiple: true, id: "__drop", hidden: true });
+      document.body.append(i);
+    });
+    await page.locator("#__drop").setInputFiles([a]);
+    await page.evaluate(() => {
+      const dt = new DataTransfer();
+      for (const f of document.getElementById("__drop").files) dt.items.add(f);
+      const card = document.getElementById("card");
+      card.dispatchEvent(new DragEvent("dragover", { dataTransfer: dt, bubbles: true, cancelable: true }));
+      card.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }));
+      document.getElementById("__drop").remove();
+    });
+    await expect(page.locator("#status")).toHaveText("파일을 올리고 고정했습니다", { timeout: 30_000 });
+    const id = await dbGet(`users/${uid}/pinned`);
+    const note = await dbGet(`users/${uid}/notes/${id}`);
+    expect(note.files.map((f) => f.name)).toEqual(["계획서.txt"]);
+    expect((await storageGet(note.files[0].path)).toString("utf8")).toBe("계획");
+    await expect(page.locator(".file-name")).toHaveText(["계획서.txt"]);
   });
 
   test("트레이의 로그아웃", async () => {

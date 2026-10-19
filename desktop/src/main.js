@@ -279,6 +279,8 @@ const storage = createStorage({ emulator: EMULATOR });
 const progressTo = (sender) => (progress) => { if (!sender.isDestroyed()) sender.send("files:progress", progress); };
 ipcMain.handle("clip:save", (e, req) =>
   clip.saveClipboard(storage, req, progressTo(e.sender)).catch(clip.toFailure));
+ipcMain.handle("files:save-dropped", (e, req) =>
+  clip.saveDropped(storage, req, progressTo(e.sender)).catch(clip.toFailure));
 ipcMain.handle("clip:discard", (_e, req) => clip.discard(storage, req));
 ipcMain.handle("files:copy", (e, req) =>
   clip.copyFiles(storage, req, progressTo(e.sender)).then(() => ({ kind: "ok" }), clip.toFailure));

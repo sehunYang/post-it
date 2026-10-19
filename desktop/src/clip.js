@@ -194,26 +194,30 @@ async function writeClipboardPaths(paths, imagePath) {
  * - 글자 → { kind: "text", text } / 아무것도 없으면 { kind: "empty" }
  * 엑셀 셀처럼 글자와 그림이 함께 오는 경우는 글자로 봅니다(사용자는 글을 복사한 것이라서).
  */
+/** 파일 경로들 → 올릴 것. 폴더는 건너뛰고 개수를 셉니다. (탐색기에서 복사했거나 끌어다 놓은 파일) */
+async function itemsFromPaths(paths, uid) {
+  const limit = maxBytes(uid);
+  const items = [];
+  let skipped = 0;
+  for (const p of paths) {
+    let st;
+    try { st = await fs.promises.stat(p); } catch { throw new UserError("파일을 찾을 수 없습니다"); }
+    if (st.isDirectory()) { skipped++; continue; }
+    const name = sanitizeName(path.basename(p));
+    if (st.size > limit) throw new UserError(`${name} 은(는) ${formatMB(limit)}를 넘어 올릴 수 없습니다`);
+    items.push({ source: p, name, type: typeOf(name), size: st.size });
+  }
+  if (!items.length) throw new UserError("폴더는 올릴 수 없습니다. 파일을 골라 주세요");
+  if (items.length > MAX_FILES) throw new UserError(`파일은 한 번에 ${MAX_FILES}개까지 올릴 수 있습니다`);
+  return { kind: "files", items, skipped };
+}
+
 async function pickClipboard(uid) {
   const limit = maxBytes(uid);
   const entries = await clipboard.read();
   const types = entries.flatMap((entry) => entry.types);
   const paths = await readClipboardPaths(types);
-  if (paths.length) {
-    const items = [];
-    let skipped = 0;
-    for (const p of paths) {
-      let st;
-      try { st = await fs.promises.stat(p); } catch { throw new UserError("복사한 파일을 찾을 수 없습니다"); }
-      if (st.isDirectory()) { skipped++; continue; }
-      const name = sanitizeName(path.basename(p));
-      if (st.size > limit) throw new UserError(`${name} 은(는) ${formatMB(limit)}를 넘어 올릴 수 없습니다`);
-      items.push({ source: p, name, type: typeOf(name), size: st.size });
-    }
-    if (!items.length) throw new UserError("폴더는 올릴 수 없습니다. 파일을 골라 복사해 주세요");
-    if (items.length > MAX_FILES) throw new UserError(`파일은 한 번에 ${MAX_FILES}개까지 올릴 수 있습니다`);
-    return { kind: "files", items, skipped };
-  }
+  if (paths.length) return itemsFromPaths(paths, uid);
 
   const text = await clipboard.readText();
   const imageEntry = entries.find((entry) => entry.types.includes("image/png"));
@@ -259,11 +263,31 @@ async function discard(storage, { bucket, idToken, paths } = {}) {
  * 글자면 { kind: "text", text } 를 돌려줍니다. 하나라도 못 올리면 앞서 올린 것을 지웁니다.
  */
 async function saveClipboard(storage, { bucket, idToken, uid, noteId } = {}, onProgress = () => {}) {
+  checkIds(uid, noteId);
+  const picked = await pickClipboard(uid);
+  if (picked.kind !== "files") return picked;
+  return uploadPicked(storage, picked, { bucket, idToken, uid, noteId }, onProgress);
+}
+
+/** 위젯에 끌어다 놓은 파일들을 올립니다. 돌려주는 값은 saveClipboard 와 같습니다. */
+async function saveDropped(storage, { bucket, idToken, uid, noteId, paths } = {}, onProgress = () => {}) {
+  checkIds(uid, noteId);
+  if (!Array.isArray(paths) || !paths.length || !paths.every((p) => typeof p === "string" && path.isAbsolute(p))) {
+    throw new UserError("끌어다 놓은 파일을 읽지 못했습니다");
+  }
+  if (paths.length > MAX_FILES) throw new UserError(`파일은 한 번에 ${MAX_FILES}개까지 올릴 수 있습니다`);
+  const picked = await itemsFromPaths(paths, uid);
+  return uploadPicked(storage, picked, { bucket, idToken, uid, noteId }, onProgress);
+}
+
+function checkIds(uid, noteId) {
   if (typeof uid !== "string" || !ID_RE.test(uid) || typeof noteId !== "string" || !ID_RE.test(noteId)) {
     throw new Error("잘못된 요청");
   }
-  const picked = await pickClipboard(uid);
-  if (picked.kind !== "files") return picked;
+}
+
+/** 고른 파일들을 users/{uid}/{noteId}/{i}/{name} 에 올리고 { kind: "files", files, thumb, skipped } 를 돌려줍니다. */
+async function uploadPicked(storage, picked, { bucket, idToken, uid, noteId }, onProgress) {
   if (!idToken) throw new UserError("로그인 정보를 확인하지 못했습니다. 잠시 뒤 다시 해 주세요");
 
   const auth = { bucket, idToken };
@@ -367,7 +391,7 @@ async function copyFiles(storage, { bucket, idToken, noteId, files } = {}, onPro
 }
 
 module.exports = {
-  saveClipboard, copyFiles, discard, toFailure,
+  saveClipboard, saveDropped, copyFiles, discard, toFailure,
   // 시험용
   sanitizeName, imageName, typeOf, makeThumb, pickClipboard, pruneReceived
 };
